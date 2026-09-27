@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T-SHIRT STORE | オンラインショップ</title>
+  <meta name="description" content="オリジナルTシャツのオンライン販売。シンプルで着心地の良いTシャツをお届けします。">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo">T-SHIRT STORE</a>
+      <nav class="nav">
+        <a href="#products">商品一覧</a>
+        <a href="#about">ショップについて</a>
+        <a href="#guide">ご利用ガイド</a>
+      </nav>
+      <button class="cart-button" id="cartOpen" aria-label="カートを開く">
+        カート <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <p class="hero-badge">オンライン販売 開設しました</p>
+      <h1>毎日着たくなる、<br>一枚を。</h1>
+      <p class="hero-text">上質なコットン100%のオリジナルTシャツ。<br>税込5,000円以上のご注文で送料無料。</p>
+      <a href="#products" class="btn btn-primary">商品を見る</a>
+    </div>
+  </section>
+
+  <main>
+    <section id="products" class="section">
+      <div class="container">
+        <h2 class="section-title">商品一覧</h2>
+        <div class="filters" id="filters">
+          <button class="filter active" data-category="all">すべて</button>
+          <button class="filter" data-category="basic">ベーシック</button>
+          <button class="filter" data-category="graphic">グラフィック</button>
+          <button class="filter" data-category="limited">限定</button>
+        </div>
+        <div class="product-grid" id="productGrid"></div>
+      </div>
+    </section>
+
+    <section id="about" class="section section-alt">
+      <div class="container about">
+        <h2 class="section-title">ショップについて</h2>
+        <p>デザインから素材選びまで、ひとつひとつこだわって作ったTシャツを販売しています。
+          肌ざわりの良い厚手コットンを使用し、洗濯を繰り返しても型崩れしにくい仕上がりです。</p>
+      </div>
+    </section>
+
+    <section id="guide" class="section">
+      <div class="container">
+        <h2 class="section-title">ご利用ガイド</h2>
+        <div class="guide-grid">
+          <div class="guide-item">
+            <h3>送料</h3>
+            <p>全国一律 550円（税込）<br>税込5,000円以上で送料無料</p>
+          </div>
+          <div class="guide-item">
+            <h3>お支払い方法</h3>
+            <p>クレジットカード / 銀行振込 / 代金引換（手数料330円）</p>
+          </div>
+          <div class="guide-item">
+            <h3>発送について</h3>
+            <p>ご注文から3〜5営業日以内に発送いたします。</p>
+          </div>
+          <div class="guide-item">
+            <h3>返品・交換</h3>
+            <p>商品到着後7日以内、未使用品に限りサイズ交換を承ります。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year"></span> T-SHIRT STORE</p>
+      <p class="footer-links">
+        <a href="#guide">特定商取引法に基づく表記</a> ・ <a href="#guide">プライバシーポリシー</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- 商品詳細モーダル -->
+  <div class="modal" id="productModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" data-close aria-label="閉じる">&times;</button>
+      <div class="modal-body">
+        <div class="modal-image" id="modalImage"></div>
+        <div class="modal-info">
+          <h3 id="modalTitle"></h3>
+          <p class="price" id="modalPrice"></p>
+          <p id="modalDesc"></p>
+          <label class="field-label">サイズ</label>
+          <div class="size-options" id="sizeOptions"></div>
+          <label class="field-label" for="qtyInput">数量</label>
+          <input type="number" id="qtyInput" min="1" max="10" value="1" class="qty-input">
+          <button class="btn btn-primary btn-block" id="addToCart">カートに入れる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カート -->
+  <aside class="drawer" id="cartDrawer" hidden>
+    <div class="modal-backdrop" data-close-cart></div>
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <h3>カート</h3>
+        <button class="modal-close" data-close-cart aria-label="閉じる">&times;</button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="cart-summary">
+        <div class="row"><span>小計</span><span id="subtotal">¥0</span></div>
+        <div class="row"><span>送料</span><span id="shipping">¥0</span></div>
+        <div class="row total"><span>合計（税込）</span><span id="total">¥0</span></div>
+        <button class="btn btn-primary btn-block" id="checkoutBtn">ご注文手続きへ</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 注文フォーム -->
+  <div class="modal" id="checkoutModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <button class="modal-close" data-close aria-label="閉じる">&times;</button>
+      <form id="checkoutForm" class="checkout-form">
+        <h3>ご注文情報の入力</h3>
+        <label>お名前<input name="name" required autocomplete="name"></label>
+        <label>メールアドレス<input name="email" type="email" required autocomplete="email"></label>
+        <label>電話番号<input name="tel" type="tel" required autocomplete="tel"></label>
+        <label>郵便番号<input name="zip" required pattern="\d{3}-?\d{4}" placeholder="123-4567" autocomplete="postal-code"></label>
+        <label>ご住所<input name="address" required autocomplete="street-address"></label>
+        <label>お支払い方法
+          <select name="payment" required>
+            <option value="card">クレジットカード</option>
+            <option value="bank">銀行振込</option>
+            <option value="cod">代金引換（+330円）</option>
+          </select>
+        </label>
+        <p class="checkout-total">お支払い金額：<strong id="checkoutTotal">¥0</strong></p>
+        <button type="submit" class="btn btn-primary btn-block">注文を確定する</button>
+      </form>
+      <div id="orderComplete" class="order-complete" hidden>
+        <h3>ご注文ありがとうございました</h3>
+        <p>注文番号：<strong id="orderNumber"></strong></p>
+        <p>ご入力いただいたメールアドレスに確認メールをお送りします。</p>
+        <button class="btn btn-primary" data-close>ショップに戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/products.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
