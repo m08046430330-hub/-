@@ -175,6 +175,7 @@ function setupTriggers() {
 //   10/6 休              … 10月6日の欄を空にする（休・×・削除 でも可）
 //   確認                 … 今月と来月の自分のシフトを返信
 //   テンプレ             … 来月分の提出用ひな形を返信（「テンプレ 10」で10月分）
+//   週テンプレ           … 来週（月〜日）の1週間分のひな形（「今週テンプレ」で今週分）
 
 const CLEAR_WORDS = ['休', '休み', '×', 'x', 'X', '削除', '消去', 'なし'];
 const HELP_TEXT = [
@@ -184,6 +185,7 @@ const HELP_TEXT = [
   '取消: 10/5 休',
   '確認: 確認',
   'ひな形: テンプレ（来月分）／テンプレ 10（10月分）',
+  '1週間: 週テンプレ（来週分）／今週テンプレ（今週分）',
 ].join('\n');
 
 function doPost(e) {
@@ -220,6 +222,9 @@ function handleText_(userId, text) {
   if (!name) return 'はじめに「登録 名前」を送ってください。\n\n' + HELP_TEXT;
   if (/^(確認|シフト)$/.test(t)) return myShift_(name);
   if (/^(ヘルプ|使い方|help)$/i.test(t)) return HELP_TEXT;
+  const wk = t.match(/^(週|今週|来週)(テンプレ|テンプレート|ひな形|雛形|雛型)?$/) ||
+    t.match(/^(?:テンプレ|テンプレート|ひな形|雛形|雛型)\s*(週|今週|来週)$/);
+  if (wk) return weekTemplate_(name, wk[1] === '今週' ? 0 : 1);
   const tpl = t.match(/^(テンプレ|テンプレート|ひな形|雛形|雛型)\s*(\d{1,2})?月?(分)?$/);
   if (tpl) return template_(name, tpl[2] ? +tpl[2] : null);
 
@@ -249,14 +254,32 @@ function template_(name, month) {
   } else {
     [y, m] = addMonth_(cy, cm);
   }
-  const nd = new Date(y, m, 0).getDate();
-  const lines = [`【シフト提出 ${m}月】${name}`];
-  for (let d = 1; d <= nd; d++) lines.push(`${m}/${d}(${WD[new Date(y, m - 1, d).getDay()]}) `);
+  const days = [];
+  for (let d = 1; d <= new Date(y, m, 0).getDate(); d++) days.push(new Date(y, m - 1, d));
+  return templateMessages_(name, `${m}月`, days);
+}
+
+// 1週間（月〜日）のひな形。weeksAhead: 0=今週, 1=来週
+function weekTemplate_(name, weeksAhead) {
+  const [y, m, d, u] = Utilities.formatDate(new Date(), TZ, 'yyyy,M,d,u').split(',').map(Number);
+  const monday = new Date(y, m - 1, d - (u - 1) + 7 * weeksAhead);
+  const days = [];
+  for (let i = 0; i < 7; i++) days.push(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i));
+  const label = `${weeksAhead ? '来週' : '今週'} ${fmtDay_(days[0])}〜${fmtDay_(days[6])}`;
+  return templateMessages_(name, label, days);
+}
+
+function templateMessages_(name, label, days) {
+  const lines = [`【シフト提出 ${label}】${name}`].concat(days.map(dt => fmtDay_(dt) + ' '));
   return [
-    `${m}月分のひな形です。\n次のメッセージを長押し→コピーして、出勤する日の後ろに時間を書いて送ってください。\n` +
-      '・何も書かない日は変更されません\n・休みにする日は「休」\n例: ' + `${m}/1(${WD[new Date(y, m - 1, 1).getDay()]}) 16:00`,
+    `${label}のひな形です。\n次のメッセージを長押し→コピーして、出勤する日の後ろに時間を書いて送ってください。\n` +
+      '・何も書かない日は変更されません\n・休みにする日は「休」\n例: ' + fmtDay_(days[0]) + ' 16:00',
     lines.join('\n'),
   ];
+}
+
+function fmtDay_(dt) {
+  return `${dt.getMonth() + 1}/${dt.getDate()}(${WD[dt.getDay()]})`;
 }
 
 function writeLine_(name, line) {
@@ -308,7 +331,7 @@ function replyLine_(replyToken, texts) {
   if (!token) return;
   const messages = [].concat(texts).slice(0, 5).map(text => ({ type: 'text', text: text.slice(0, 5000) }));
   messages[messages.length - 1].quickReply = {
-    items: ['テンプレ', '確認', '使い方'].map(label => ({
+    items: ['週テンプレ', 'テンプレ', '確認', '使い方'].map(label => ({
       type: 'action', action: { type: 'message', label, text: label },
     })),
   };
