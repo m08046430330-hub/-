@@ -26,10 +26,10 @@ import urllib.request
 API = "https://api.printify.com/v1"
 
 # Etsy 手数料のモデル: 手数料 ≒ FEE_RATE × 販売価格 + FEE_FIXED（ドル）
-# Printify の価格設定画面に表示された「Etsyの手数料」から逆算した値。
+# Printify の価格設定画面の「利益」から逆算した値（ショップ所在地: 日本、2026-09-29時点）。
 # 販売手数料・決済手数料・送料分の手数料・出品料などを含む概算。
-FEE_RATE = 0.095
-FEE_FIXED = 1.15
+FEE_RATE = 0.094
+FEE_FIXED = 0.96
 
 
 def api(method, path, token, body=None):
