@@ -231,7 +231,8 @@ function setupTriggers() {
 const CLEAR_WORDS = ['休', '休み', '×', 'x', 'X', '削除', '消去', 'なし'];
 const HELP_TEXT = [
   '【シフト入力の使い方】',
-  '最初に1回: 登録 名前（例: 登録 井ノ上真斗）',
+  '最初に1回: 登録 フルネーム（例: 登録 井ノ上真斗）',
+  '　※シフト表にない名前は自動で追加されます',
   '入力: 10/5 16:00（1行に1日。複数行OK）',
   '取消: 10/5 休',
   '確認: 確認',
@@ -262,11 +263,26 @@ function handleText_(userId, text) {
   const reg = t.match(/^登録\s*(.+)$/);
   if (reg) {
     const name = reg[1].replace(/\s/g, '');
-    const latest = monthSheets_().pop();
-    const names = latest ? readStaff_(latest.sheet).map(s => String(s.name).replace(/\s/g, '')) : [];
-    if (names.indexOf(name) < 0) return `「${name}」はシフト表にありません。シフト表の名前と同じ表記で送ってください。`;
+    if (name.length > 20) return '名前は20文字以内で送ってください。';
+    // 同じ名前を別のLINEがすでに使っていないか
+    const all = props.getProperties();
+    const owner = Object.keys(all).find(k => k.indexOf('USER_') === 0 && all[k] === name && k !== key);
+    if (owner) return `「${name}」はすでに別のLINEで登録されています。管理者に確認してください。`;
+
+    // シフト表にいなければ、今月以降の各月のシートに行を追加する（時給は管理者があとで入力）
+    const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+    let added = false;
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      monthSheets_().filter(s => s.y * 12 + s.m >= cy * 12 + cm).forEach(s => {
+        if (addStaffRow_(s.sheet, s.y, s.m, name, '')) added = true;
+      });
+    } finally {
+      lock.releaseLock();
+    }
     props.setProperty(key, name);
-    return `${name}さんとして登録しました。\n\n` + HELP_TEXT;
+    return `${name}さんとして登録しました。` + (added ? '（シフト表に追加しました）' : '') + '\n\n' + HELP_TEXT;
   }
 
   const name = props.getProperty(key);
