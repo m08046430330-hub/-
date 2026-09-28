@@ -174,6 +174,7 @@ function setupTriggers() {
 //   10/5 16:00           （複数行まとめて送ってもOK）
 //   10/6 休              … 10月6日の欄を空にする（休・×・削除 でも可）
 //   確認                 … 今月と来月の自分のシフトを返信
+//   テンプレ             … 来月分の提出用ひな形を返信（「テンプレ 10」で10月分）
 
 const CLEAR_WORDS = ['休', '休み', '×', 'x', 'X', '削除', '消去', 'なし'];
 const HELP_TEXT = [
@@ -182,6 +183,7 @@ const HELP_TEXT = [
   '入力: 10/5 16:00（1行に1日。複数行OK）',
   '取消: 10/5 休',
   '確認: 確認',
+  'ひな形: テンプレ（来月分）／テンプレ 10（10月分）',
 ].join('\n');
 
 function doPost(e) {
@@ -218,25 +220,51 @@ function handleText_(userId, text) {
   if (!name) return 'はじめに「登録 名前」を送ってください。\n\n' + HELP_TEXT;
   if (/^(確認|シフト)$/.test(t)) return myShift_(name);
   if (/^(ヘルプ|使い方|help)$/i.test(t)) return HELP_TEXT;
+  const tpl = t.match(/^(テンプレ|テンプレート|ひな形|雛形|雛型)\s*(\d{1,2})?月?(分)?$/);
+  if (tpl) return template_(name, tpl[2] ? +tpl[2] : null);
 
   const results = [];
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     t.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
-      results.push(writeLine_(name, line));
+      const r = writeLine_(name, line);
+      if (r) results.push(r);
     });
   } finally {
     lock.releaseLock();
   }
+  if (!results.length) return '入力がありませんでした。出勤する日の後ろに時間を書いて送ってください。';
   return `${name}さん\n` + results.join('\n');
 }
 
+// 提出用のひな形。日付と曜日だけ入っていて、時間を書き足して送り返す
+function template_(name, month) {
+  const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+  let y, m;
+  if (month) {
+    if (month < 1 || month > 12) return '月は1〜12で指定してください（例: テンプレ 11）';
+    m = month;
+    y = (cm - m > 6) ? cy + 1 : (m - cm > 6 ? cy - 1 : cy);
+  } else {
+    [y, m] = addMonth_(cy, cm);
+  }
+  const nd = new Date(y, m, 0).getDate();
+  const lines = [`【シフト提出 ${m}月】${name}`];
+  for (let d = 1; d <= nd; d++) lines.push(`${m}/${d}(${WD[new Date(y, m - 1, d).getDay()]}) `);
+  return [
+    `${m}月分のひな形です。\n次のメッセージを長押し→コピーして、出勤する日の後ろに時間を書いて送ってください。\n` +
+      '・何も書かない日は変更されません\n・休みにする日は「休」\n例: ' + `${m}/1(${WD[new Date(y, m - 1, 1).getDay()]}) 16:00`,
+    lines.join('\n'),
+  ];
+}
+
 function writeLine_(name, line) {
-  const mt = line.match(/^(\d{1,2})[\/月](\d{1,2})日?\s*(.*)$/);
+  if (/^[【―]/.test(line)) return null; // ひな形の見出し行
+  const mt = line.match(/^(\d{1,2})[\/月](\d{1,2})日?\s*(?:[(（][^)）]*[)）])?\s*(.*)$/);
   if (!mt) return `✕「${line}」形式が違います（例: 10/5 16:00）`;
   const m = +mt[1], d = +mt[2], value = mt[3].trim();
-  if (!value) return `✕ ${m}/${d} 時間などを書いてください`;
+  if (!value) return null; // ひな形の空欄の日は変更しない
 
   const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
   const y = (cm - m > 6) ? cy + 1 : (m - cm > 6 ? cy - 1 : cy);
@@ -274,14 +302,21 @@ function myShift_(name) {
   return out.join('\n');
 }
 
-function replyLine_(replyToken, text) {
+// 返信の下に「テンプレ」「確認」ボタン（クイックリプライ）を付ける
+function replyLine_(replyToken, texts) {
   const token = PropertiesService.getScriptProperties().getProperty('LINE_TOKEN');
   if (!token) return;
+  const messages = [].concat(texts).slice(0, 5).map(text => ({ type: 'text', text: text.slice(0, 5000) }));
+  messages[messages.length - 1].quickReply = {
+    items: ['テンプレ', '確認', '使い方'].map(label => ({
+      type: 'action', action: { type: 'message', label, text: label },
+    })),
+  };
   UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
     method: 'post',
     contentType: 'application/json',
     headers: { Authorization: 'Bearer ' + token },
-    payload: JSON.stringify({ replyToken, messages: [{ type: 'text', text: text.slice(0, 5000) }] }),
+    payload: JSON.stringify({ replyToken, messages }),
     muteHttpExceptions: true,
   });
 }
