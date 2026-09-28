@@ -57,3 +57,21 @@ GitHub Pages を使うと無料で公開できます：
 - **BASE / STORES / Shopify**：決済・在庫管理まで含めたECサービスへの移行
 
 また、日本国内で販売する場合は「特定商取引法に基づく表記」と「プライバシーポリシー」のページを用意してください。
+
+## Printify の価格を自動設定する（tools/printify_price.py）
+
+Printify の全商品について、1個あたりの利益が目標額（既定 500円）になる価格を
+原価から計算し、一括で設定するスクリプトです。
+
+```sh
+# APIトークンは Printify の My Profile → Connections → API tokens で作成
+export PRINTIFY_TOKEN="（トークン）"      # Windows PowerShell: $env:PRINTIFY_TOKEN="（トークン）"
+
+python tools/printify_price.py                        # 確認のみ（何も変更しない）
+python tools/printify_price.py --apply                # Printify の価格を更新
+python tools/printify_price.py --apply --publish      # さらに Etsy に反映
+python tools/printify_price.py --profit-yen 700 --rate 145   # 目標利益・為替を変更
+```
+
+Etsy の手数料は「販売価格の9.5% + 1.15ドル」の概算で計算しています（Printify 画面の表示から逆算）。
+価格は「○○.99ドル」に切り上げます。
