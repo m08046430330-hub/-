@@ -47,7 +47,6 @@ function createMonthSheet_(y, m) {
   const staff = prev ? readStaff_(prev.sheet).map(s => [s.name, s.wage]) : [];
   const sh = ss.insertSheet(name, 0);
   buildSheet_(sh, y, m, staff);
-  notify_(`${y}年${m}月の男子シフト表を作成しました。\n${ss.getUrl()}#gid=${sh.getSheetId()}`);
 }
 
 function buildSheet_(sh, y, m, staff) {
@@ -220,8 +219,8 @@ function setupTriggers() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('autoCreateNextMonth').timeBased().everyDays(1).atHour(9).inTimezone(TZ).create();
   SpreadsheetApp.getUi().alert('自動実行を設定しました。\n' +
-    '・翌月1日の1週間前 9時台: 翌月のシートを作成してLINEに通知\n' +
-    '（毎晩の「明日のシフト」通知は送りません）');
+    '・翌月1日の1週間前 9時台: 翌月のシートを作成\n' +
+    '（LINEへの自動通知はありません）');
 }
 
 // ---------- LINEからの入力（Webhook） ----------
