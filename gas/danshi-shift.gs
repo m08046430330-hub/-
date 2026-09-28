@@ -28,9 +28,12 @@ function createNextMonthSheet() {
   createMonthSheet_(y, m);
 }
 
-// トリガー用: 今日から見て翌月のシートがなければ作る
+// トリガー用（毎日実行）: 翌月1日の1週間前になったら翌月のシートを作る
+const DAYS_BEFORE = 7;
 function autoCreateNextMonth() {
-  const [y, m] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+  const [y, m, d] = Utilities.formatDate(new Date(), TZ, 'yyyy,M,d').split(',').map(Number);
+  const daysLeft = new Date(y, m, 0).getDate() - d + 1; // 翌月1日までの日数
+  if (daysLeft > DAYS_BEFORE) return;
   const [ny, nm] = addMonth_(y, m);
   createMonthSheet_(ny, nm);
 }
@@ -159,10 +162,10 @@ function notify_(text) {
 
 function setupTriggers() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('autoCreateNextMonth').timeBased().onMonthDay(20).atHour(9).inTimezone(TZ).create();
+  ScriptApp.newTrigger('autoCreateNextMonth').timeBased().everyDays(1).atHour(9).inTimezone(TZ).create();
   ScriptApp.newTrigger('sendTomorrowShift').timeBased().everyDays(1).atHour(20).inTimezone(TZ).create();
   SpreadsheetApp.getUi().alert('自動実行を設定しました。\n' +
-    '・毎月20日 9時台: 翌月のシートを作成してLINEに通知\n' +
+    '・翌月1日の1週間前 9時台: 翌月のシートを作成してLINEに通知\n' +
     '・毎日20時台: 明日のシフトをLINEに送信');
 }
 
