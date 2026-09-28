@@ -3,7 +3,7 @@
 
 使い方:
   1. Printify の「My Profile → Connections → API tokens」でトークンを作成
-  2. 環境変数にトークンを入れて実行（トークンは誰にも送らないこと）
+  2. 環境変数にトークンを入れて実行（プロキシが認証を自動で付ける環境では不要）（トークンは誰にも送らないこと）
        Windows (PowerShell):  $env:PRINTIFY_TOKEN="ここにトークン"
        Mac / Linux:           export PRINTIFY_TOKEN="ここにトークン"
   3. まずは確認だけ（何も変更しない）:
@@ -34,15 +34,15 @@ FEE_FIXED = 1.15
 
 def api(method, path, token, body=None):
     data = json.dumps(body).encode() if body is not None else None
+    headers = {"Content-Type": "application/json", "User-Agent": "printify-price-script"}
+    # トークンが無い場合は Authorization を付けない（プロキシが認証情報を自動で付ける環境向け）
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(
         API + path,
         data=data,
         method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "User-Agent": "printify-price-script",
-        },
+        headers=headers,
     )
     try:
         with urllib.request.urlopen(req, timeout=60) as res:
@@ -81,9 +81,8 @@ def main():
     p.add_argument("--publish", action="store_true", help="更新後に Etsy へ価格を反映する")
     args = p.parse_args()
 
+    # 未設定でもOK（api.printify.com 宛てに認証を自動付与する環境ではそのまま動く）
     token = os.environ.get("PRINTIFY_TOKEN")
-    if not token:
-        sys.exit("環境変数 PRINTIFY_TOKEN にAPIトークンを設定してください。")
 
     target_usd = args.profit_yen / args.rate
 
