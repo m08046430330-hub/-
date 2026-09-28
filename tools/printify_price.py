@@ -76,7 +76,7 @@ def main():
     p = argparse.ArgumentParser(description="Printify の価格を利益目標額に合わせて一括設定")
     p.add_argument("--profit-yen", type=float, default=500, help="1個あたりの目標利益（円）既定: 500")
     p.add_argument("--rate", type=float, default=150, help="為替レート（1ドル=何円）既定: 150")
-    p.add_argument("--shop", type=int, help="ショップID（省略時は最初のショップ）")
+    p.add_argument("--shop", type=int, help="ショップID（省略時は Etsy に接続されたショップ）")
     p.add_argument("--apply", action="store_true", help="実際に価格を更新する（指定しないと確認のみ）")
     p.add_argument("--publish", action="store_true", help="更新後に Etsy へ価格を反映する")
     args = p.parse_args()
@@ -90,9 +90,17 @@ def main():
     shops = api("GET", "/shops.json", token)
     if not shops:
         sys.exit("ショップが見つかりません。")
-    shop = next((s for s in shops if s["id"] == args.shop), None) if args.shop else shops[0]
+    print("ショップ一覧:")
+    for s in shops:
+        print(f"  ID {s['id']}  {s['title']}  （{s.get('sales_channel', '?')}）")
+    print()
+    if args.shop:
+        shop = next((s for s in shops if s["id"] == args.shop), None)
+    else:
+        # Etsy に接続されたショップを優先する
+        shop = next((s for s in shops if s.get("sales_channel") == "etsy"), shops[0])
     if not shop:
-        sys.exit(f"ショップID {args.shop} が見つかりません。候補: {[s['id'] for s in shops]}")
+        sys.exit(f"ショップID {args.shop} が見つかりません。上の一覧から --shop でIDを指定してください。")
     print(f"ショップ: {shop['title']} (ID {shop['id']})")
     print(f"目標利益: {args.profit_yen:.0f}円 ≒ {target_usd:.2f}ドル（1ドル={args.rate:.0f}円）\n")
 
