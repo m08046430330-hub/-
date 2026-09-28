@@ -1,5 +1,5 @@
 /**
- * 男子シフト 自動作成 + LINE連携（Google Apps Script）
+ * 男子シフト 自動作成 + LINE連携（LINEからのシフト入力・通知）（Google Apps Script）
  *
  * 使い方: スプレッドシート「男子シフト」→ 拡張機能 → Apps Script に貼り付けて保存。
  * シート名は「2026.10」のように「年.月」の形式にしておくこと。
@@ -36,7 +36,7 @@ function autoCreateNextMonth() {
 }
 
 function createMonthSheet_(y, m) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = ss_();
   const name = y + '.' + m;
   if (ss.getSheetByName(name)) return;
   const prev = monthSheets_().filter(s => s.y * 12 + s.m < y * 12 + m).pop();
@@ -118,6 +118,7 @@ function setupLine() {
   const to = ui.prompt('LINE設定 (2/2)',
     '送信先のユーザーID/グループID（U… / C…）。空欄なら友だち全員に一斉送信', ui.ButtonSet.OK_CANCEL);
   const p = PropertiesService.getScriptProperties();
+  p.setProperty('SHEET_ID', SpreadsheetApp.getActiveSpreadsheet().getId());
   p.setProperty('LINE_TOKEN', t.getResponseText().trim());
   p.setProperty('LINE_TO', to.getSelectedButton() === ui.Button.OK ? to.getResponseText().trim() : '');
   notify_('男子シフト表とLINEの連携テストです。');
@@ -127,7 +128,7 @@ function setupLine() {
 function sendTomorrowShift() {
   const [y, m, d, u] = Utilities.formatDate(new Date(Date.now() + 86400000), TZ, 'yyyy,M,d,u')
     .split(',').map(Number);
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(y + '.' + m);
+  const sh = ss_().getSheetByName(y + '.' + m);
   if (!sh) return;
   const lines = readStaff_(sh)
     .map(s => [s.name, sh.getRange(s.row, 2 + d).getDisplayValue()])
@@ -165,10 +166,142 @@ function setupTriggers() {
     '・毎日20時台: 明日のシフトをLINEに送信');
 }
 
+// ---------- LINEからの入力（Webhook） ----------
+//
+// 送信例:
+//   登録 井ノ上真斗      … 最初に1回。自分のLINEと名前を結びつける
+//   10/5 16:00           … 10月5日の欄に「16:00」と入力
+//   10/5 16:00           （複数行まとめて送ってもOK）
+//   10/6 休              … 10月6日の欄を空にする（休・×・削除 でも可）
+//   確認                 … 今月と来月の自分のシフトを返信
+
+const CLEAR_WORDS = ['休', '休み', '×', 'x', 'X', '削除', '消去', 'なし'];
+const HELP_TEXT = [
+  '【シフト入力の使い方】',
+  '最初に1回: 登録 名前（例: 登録 井ノ上真斗）',
+  '入力: 10/5 16:00（1行に1日。複数行OK）',
+  '取消: 10/5 休',
+  '確認: 確認',
+].join('\n');
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  (body.events || []).forEach(ev => {
+    if (ev.type !== 'message' || ev.message.type !== 'text' || !ev.source.userId) return;
+    let reply;
+    try {
+      reply = handleText_(ev.source.userId, ev.message.text);
+    } catch (err) {
+      reply = 'エラー: ' + err.message;
+    }
+    if (reply) replyLine_(ev.replyToken, reply);
+  });
+  return ContentService.createTextOutput('OK');
+}
+
+function handleText_(userId, text) {
+  const t = normalize_(text).trim();
+  const props = PropertiesService.getScriptProperties();
+  const key = 'USER_' + userId;
+
+  const reg = t.match(/^登録\s*(.+)$/);
+  if (reg) {
+    const name = reg[1].replace(/\s/g, '');
+    const latest = monthSheets_().pop();
+    const names = latest ? readStaff_(latest.sheet).map(s => String(s.name).replace(/\s/g, '')) : [];
+    if (names.indexOf(name) < 0) return `「${name}」はシフト表にありません。シフト表の名前と同じ表記で送ってください。`;
+    props.setProperty(key, name);
+    return `${name}さんとして登録しました。\n\n` + HELP_TEXT;
+  }
+
+  const name = props.getProperty(key);
+  if (!name) return 'はじめに「登録 名前」を送ってください。\n\n' + HELP_TEXT;
+  if (/^(確認|シフト)$/.test(t)) return myShift_(name);
+  if (/^(ヘルプ|使い方|help)$/i.test(t)) return HELP_TEXT;
+
+  const results = [];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    t.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
+      results.push(writeLine_(name, line));
+    });
+  } finally {
+    lock.releaseLock();
+  }
+  return `${name}さん\n` + results.join('\n');
+}
+
+function writeLine_(name, line) {
+  const mt = line.match(/^(\d{1,2})[\/月](\d{1,2})日?\s*(.*)$/);
+  if (!mt) return `✕「${line}」形式が違います（例: 10/5 16:00）`;
+  const m = +mt[1], d = +mt[2], value = mt[3].trim();
+  if (!value) return `✕ ${m}/${d} 時間などを書いてください`;
+
+  const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+  const y = (cm - m > 6) ? cy + 1 : (m - cm > 6 ? cy - 1 : cy);
+  const sh = ss_().getSheetByName(y + '.' + m);
+  if (!sh) return `✕ ${m}月のシートがまだありません`;
+  if (d < 1 || d > new Date(y, m, 0).getDate()) return `✕ ${m}/${d} は存在しない日付です`;
+
+  const me = readStaff_(sh).find(s => String(s.name).replace(/\s/g, '') === name);
+  if (!me) return `✕ ${m}月のシートに${name}さんの行がありません`;
+
+  const cell = sh.getRange(me.row, 2 + d);
+  const w = WD[new Date(y, m - 1, d).getDay()];
+  if (CLEAR_WORDS.indexOf(value) >= 0) {
+    cell.clearContent();
+    return `○ ${m}/${d}(${w}) 休み`;
+  }
+  cell.setNumberFormat('@').setValue(value);
+  return `○ ${m}/${d}(${w}) ${value}`;
+}
+
+function myShift_(name) {
+  const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+  const out = [`【${name}さんのシフト】`];
+  [[cy, cm], addMonth_(cy, cm)].forEach(([y, m]) => {
+    const sh = ss_().getSheetByName(y + '.' + m);
+    if (!sh) return;
+    const me = readStaff_(sh).find(s => String(s.name).replace(/\s/g, '') === name);
+    if (!me) return;
+    const nd = new Date(y, m, 0).getDate();
+    const vals = sh.getRange(me.row, 3, 1, nd).getDisplayValues()[0];
+    const days = vals.map((v, i) => v ? `${m}/${i + 1}(${WD[new Date(y, m - 1, i + 1).getDay()]}) ${v}` : null)
+      .filter(Boolean);
+    out.push(`― ${m}月 ―`, days.length ? days.join('\n') : '入力なし');
+  });
+  return out.join('\n');
+}
+
+function replyLine_(replyToken, text) {
+  const token = PropertiesService.getScriptProperties().getProperty('LINE_TOKEN');
+  if (!token) return;
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + token },
+    payload: JSON.stringify({ replyToken, messages: [{ type: 'text', text: text.slice(0, 5000) }] }),
+    muteHttpExceptions: true,
+  });
+}
+
+// 全角数字・記号を半角にそろえる
+function normalize_(s) {
+  return s.replace(/[０-９：／]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/　/g, ' ').replace(/\r/g, '');
+}
+
 // ---------- helpers ----------
 
+// Webhook（doPost）から呼ばれたときも同じスプレッドシートを開けるようにする
+function ss_() {
+  const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function monthSheets_() {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheets().map(s => {
+  return ss_().getSheets().map(s => {
     const mt = s.getName().match(/^(\d{4})\.(\d{1,2})$/);
     return mt ? { sheet: s, y: +mt[1], m: +mt[2] } : null;
   }).filter(Boolean).sort((a, b) => (a.y * 12 + a.m) - (b.y * 12 + b.m));
