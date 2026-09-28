@@ -227,11 +227,11 @@ function setupTriggers() {
 //
 // 送信例:
 //   登録 井ノ上真斗      … 最初に1回。自分のLINEと名前を結びつける
-//   10/5 16:00           … 10月5日「16:00」の希望を受付（複数行まとめて送ってもOK）
-//   10/6 休              … 10月6日を休みにしたい希望を受付（休・×・削除 でも可）
-//   確認                 … 今月と来月の自分のシフト（管理者が確定したもの）を返信
-// LINEで届いたシフトはシフト表に書き込まず、「LINE受付」シートに記録する。
-// シフト表への反映は管理者が行う。
+//   10/5 16:00           … 空いている日ならシフト表に入力（複数行まとめて送ってもOK）
+//   10/6 休              … 休みの希望（休・×・削除 でも可）
+//   確認                 … 今月と来月の自分のシフトを返信
+// すでに値が入っている日の変更（休みを含む）はシフト表に書き込まず、
+// 「LINE受付」シートに記録して管理者が直接シフト表を書き換える。
 //   テンプレ             … 来月分の提出用ひな形を返信（「テンプレ 10」で10月分）
 //   週テンプレ           … 来週（月〜日）の1週間分のひな形（「今週テンプレ」で今週分）
 
@@ -240,10 +240,10 @@ const HELP_TEXT = [
   '【シフト入力の使い方】',
   '最初に1回: 登録 フルネーム（例: 登録 井ノ上真斗）',
   '　※シフト表にない名前は自動で追加されます',
-  '希望: 10/5 16:00（1行に1日。複数行OK）',
-  '休み希望: 10/5 休',
-  '確認: 確認（管理者が確定したシフト）',
-  '※送った希望は管理者が確認してシフト表に反映します',
+  '提出: 10/5 16:00（1行に1日。複数行OK）',
+  '休み: 10/5 休',
+  '確認: 確認',
+  '※すでに入っている日の変更は、管理者が確認して反映します',
   'ひな形: テンプレ（来月分）／テンプレ 10（10月分）',
   '1週間: 週テンプレ（来週分）／今週テンプレ（今週分）',
 ].join('\n');
@@ -315,7 +315,9 @@ function handleText_(userId, text) {
     lock.releaseLock();
   }
   if (!results.length) return '入力がありませんでした。出勤する日の後ろに時間を書いて送ってください。';
-  return `${name}さん\n以下を受け付けました。シフト表への反映は管理者が行います。\n` + results.join('\n');
+  const note = results.some(r => r.indexOf('△') === 0)
+    ? '\n\n△ の変更は管理者が確認してシフト表に反映します。' : '';
+  return `${name}さん\n` + results.join('\n') + note;
 }
 
 // 提出用のひな形。日付と曜日だけ入っていて、時間を書き足して送り返す
@@ -373,17 +375,28 @@ function writeLine_(name, line) {
   const me = readStaff_(sh).find(s => String(s.name).replace(/\s/g, '') === name);
   if (!me) return `✕ ${m}月のシートに${name}さんの行がありません`;
 
-  // シフト表には書き込まず、LINE受付シートに記録するだけ
+  const cell = sh.getRange(me.row, 2 + d);
   const w = WD[new Date(y, m - 1, d).getDay()];
-  const wish = CLEAR_WORDS.indexOf(value) >= 0 ? '休み' : value;
-  const current = sh.getRange(me.row, 2 + d).getDisplayValue();
+  const off = CLEAR_WORDS.indexOf(value) >= 0;
+  const wish = off ? '休み' : value;
+  const current = cell.getDisplayValue();
+
+  // 空いている日への提出だけシフト表に書き込む
+  if (!current) {
+    if (off) return `○ ${m}/${d}(${w}) 休み`;
+    cell.setNumberFormat('@').setValue(value);
+    return `○ ${m}/${d}(${w}) ${value}（シフト表に入力しました）`;
+  }
+  if (!off && current === value) return `○ ${m}/${d}(${w}) ${value}（入力済み）`;
+
+  // すでに入っている日の変更は管理者が反映する
   logRequest_(name, `${m}/${d}(${w})`, wish, current);
-  return `○ ${m}/${d}(${w}) ${wish}`;
+  return `△ ${m}/${d}(${w}) ${current} → ${wish}（変更希望として受付）`;
 }
 
 const LOG_SHEET = 'LINE受付';
 
-// 受信日時・名前・日付・希望・その時点のシフト表の値・対応欄 を1行追加する
+// 変更希望を記録する: 受信日時・名前・日付・希望・その時点のシフト表の値・対応欄
 function logRequest_(name, day, wish, current) {
   const ss = ss_();
   let sh = ss.getSheetByName(LOG_SHEET);
