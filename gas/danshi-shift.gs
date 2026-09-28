@@ -176,7 +176,15 @@ function setupLine() {
   ui.alert('設定しました。LINEにテストメッセージが届いたか確認してください。');
 }
 
-function sendTomorrowShift() {
+// メニューから手動で送るときだけ使う（毎晩の自動送信は廃止）
+function sendTomorrowShift(e) {
+  if (e && e.triggerUid) {
+    // 以前に設定した毎晩のトリガーから呼ばれたら、そのトリガーを削除して何もしない
+    ScriptApp.getProjectTriggers()
+      .filter(t => t.getUniqueId() === e.triggerUid)
+      .forEach(t => ScriptApp.deleteTrigger(t));
+    return;
+  }
   const [y, m, d, u] = Utilities.formatDate(new Date(Date.now() + 86400000), TZ, 'yyyy,M,d,u')
     .split(',').map(Number);
   const sh = ss_().getSheetByName(y + '.' + m);
@@ -211,10 +219,9 @@ function notify_(text) {
 function setupTriggers() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('autoCreateNextMonth').timeBased().everyDays(1).atHour(9).inTimezone(TZ).create();
-  ScriptApp.newTrigger('sendTomorrowShift').timeBased().everyDays(1).atHour(20).inTimezone(TZ).create();
   SpreadsheetApp.getUi().alert('自動実行を設定しました。\n' +
     '・翌月1日の1週間前 9時台: 翌月のシートを作成してLINEに通知\n' +
-    '・毎日20時台: 明日のシフトをLINEに送信');
+    '（毎晩の「明日のシフト」通知は送りません）');
 }
 
 // ---------- LINEからの入力（Webhook） ----------
