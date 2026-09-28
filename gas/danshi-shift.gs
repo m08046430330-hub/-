@@ -12,6 +12,7 @@ function onOpen() {
     .addItem('翌月のシートを作成', 'createNextMonthSheet')
     .addItem('明日のシフトをLINEに送信', 'sendTomorrowShift')
     .addSeparator()
+    .addItem('スタッフを追加', 'addStaff')
     .addItem('LINE設定', 'setupLine')
     .addItem('自動実行を設定', 'setupTriggers')
     .addToUi();
@@ -109,6 +110,53 @@ function buildSheet_(sh, y, m, staff) {
   sh.setColumnWidth(tot, 70);
   sh.setFrozenRows(3);
   sh.setFrozenColumns(2);
+}
+
+// ---------- スタッフ追加 ----------
+
+// 今月以降のすべての月のシートに、出勤人数の行の上へ1行追加する
+function addStaff() {
+  const ui = SpreadsheetApp.getUi();
+  const n = ui.prompt('スタッフを追加 (1/2)', '名前（フルネーム）', ui.ButtonSet.OK_CANCEL);
+  if (n.getSelectedButton() !== ui.Button.OK) return;
+  const name = n.getResponseText().trim();
+  if (!name) return;
+  const w = ui.prompt('スタッフを追加 (2/2)', '時給（数字のみ。例: 1300）', ui.ButtonSet.OK_CANCEL);
+  if (w.getSelectedButton() !== ui.Button.OK) return;
+  const wage = Number(normalize_(w.getResponseText()).replace(/[^\d]/g, '')) || '';
+
+  const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
+  const targets = monthSheets_().filter(s => s.y * 12 + s.m >= cy * 12 + cm);
+  const added = targets.filter(s => addStaffRow_(s.sheet, s.y, s.m, name, wage)).map(s => s.sheet.getName());
+  ui.alert(added.length
+    ? `${name}さんを追加しました（${added.join('、')}）。\nLINEで「登録 ${name}」を送ってもらえば入力できます。`
+    : `${name}さんはすでに登録されています。`);
+}
+
+function addStaffRow_(sh, y, m, name, wage) {
+  const clean = s => String(s).replace(/\s/g, '');
+  if (readStaff_(sh).some(s => clean(s.name) === clean(name))) return false;
+  const colA = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => r[0]);
+  const totalRow = colA.indexOf('出勤人数') + 1;
+  if (totalRow < 4) throw new Error(sh.getName() + ' に「出勤人数」の行が見つかりません');
+
+  const nd = new Date(y, m, 0).getDate();
+  const first = 3, last = first + nd - 1, tot = last + 1;
+  sh.insertRowBefore(totalRow);
+  const r = totalRow, newTotal = totalRow + 1;
+  if (r - 1 >= 4) {
+    sh.getRange(r - 1, 1, 1, tot).copyFormatToRange(sh, 1, tot, r, r);
+    sh.getRange(r, first, 1, nd).setNumberFormat('General');
+  }
+  const row = [name, wage];
+  for (let d = 0; d < nd; d++) row.push('');
+  row.push(`=COUNTA(${col_(first)}${r}:${col_(last)}${r})`);
+  sh.getRange(r, 1, 1, tot).setValues([row]);
+
+  const tr = [];
+  for (let c = first; c <= last; c++) tr.push(`=COUNTA(${col_(c)}4:${col_(c)}${newTotal - 1})`);
+  sh.getRange(newTotal, first, 1, nd).setFormulas([tr]);
+  return true;
 }
 
 // ---------- LINE ----------
