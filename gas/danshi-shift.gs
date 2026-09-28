@@ -227,10 +227,11 @@ function setupTriggers() {
 //
 // 送信例:
 //   登録 井ノ上真斗      … 最初に1回。自分のLINEと名前を結びつける
-//   10/5 16:00           … 10月5日の欄に「16:00」と入力
-//   10/5 16:00           （複数行まとめて送ってもOK）
-//   10/6 休              … 10月6日の欄を空にする（休・×・削除 でも可）
-//   確認                 … 今月と来月の自分のシフトを返信
+//   10/5 16:00           … 10月5日「16:00」の希望を受付（複数行まとめて送ってもOK）
+//   10/6 休              … 10月6日を休みにしたい希望を受付（休・×・削除 でも可）
+//   確認                 … 今月と来月の自分のシフト（管理者が確定したもの）を返信
+// LINEで届いたシフトはシフト表に書き込まず、「LINE受付」シートに記録する。
+// シフト表への反映は管理者が行う。
 //   テンプレ             … 来月分の提出用ひな形を返信（「テンプレ 10」で10月分）
 //   週テンプレ           … 来週（月〜日）の1週間分のひな形（「今週テンプレ」で今週分）
 
@@ -239,9 +240,10 @@ const HELP_TEXT = [
   '【シフト入力の使い方】',
   '最初に1回: 登録 フルネーム（例: 登録 井ノ上真斗）',
   '　※シフト表にない名前は自動で追加されます',
-  '入力: 10/5 16:00（1行に1日。複数行OK）',
-  '取消: 10/5 休',
-  '確認: 確認',
+  '希望: 10/5 16:00（1行に1日。複数行OK）',
+  '休み希望: 10/5 休',
+  '確認: 確認（管理者が確定したシフト）',
+  '※送った希望は管理者が確認してシフト表に反映します',
   'ひな形: テンプレ（来月分）／テンプレ 10（10月分）',
   '1週間: 週テンプレ（来週分）／今週テンプレ（今週分）',
 ].join('\n');
@@ -313,7 +315,7 @@ function handleText_(userId, text) {
     lock.releaseLock();
   }
   if (!results.length) return '入力がありませんでした。出勤する日の後ろに時間を書いて送ってください。';
-  return `${name}さん\n` + results.join('\n');
+  return `${name}さん\n以下を受け付けました。シフト表への反映は管理者が行います。\n` + results.join('\n');
 }
 
 // 提出用のひな形。日付と曜日だけ入っていて、時間を書き足して送り返す
@@ -371,14 +373,28 @@ function writeLine_(name, line) {
   const me = readStaff_(sh).find(s => String(s.name).replace(/\s/g, '') === name);
   if (!me) return `✕ ${m}月のシートに${name}さんの行がありません`;
 
-  const cell = sh.getRange(me.row, 2 + d);
+  // シフト表には書き込まず、LINE受付シートに記録するだけ
   const w = WD[new Date(y, m - 1, d).getDay()];
-  if (CLEAR_WORDS.indexOf(value) >= 0) {
-    cell.clearContent();
-    return `○ ${m}/${d}(${w}) 休み`;
+  const wish = CLEAR_WORDS.indexOf(value) >= 0 ? '休み' : value;
+  const current = sh.getRange(me.row, 2 + d).getDisplayValue();
+  logRequest_(name, `${m}/${d}(${w})`, wish, current);
+  return `○ ${m}/${d}(${w}) ${wish}`;
+}
+
+const LOG_SHEET = 'LINE受付';
+
+// 受信日時・名前・日付・希望・その時点のシフト表の値・対応欄 を1行追加する
+function logRequest_(name, day, wish, current) {
+  const ss = ss_();
+  let sh = ss.getSheetByName(LOG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(LOG_SHEET);
+    sh.getRange(1, 1, 1, 6).setValues([['受信日時', '名前', '日付', '希望', '現在のシフト表', '対応']])
+      .setBackground('#1F3864').setFontColor('#FFFFFF').setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 140);
   }
-  cell.setNumberFormat('@').setValue(value);
-  return `○ ${m}/${d}(${w}) ${value}`;
+  sh.appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy/MM/dd HH:mm'), name, day, wish, current || '（空欄）', '']);
 }
 
 function myShift_(name) {
