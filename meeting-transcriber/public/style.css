@@ -90,6 +90,9 @@ button.small { padding: 4px 10px; font-size: 13px; }
 .transcript .speaker { display: block; font-weight: 700; color: var(--text); }
 .transcript .text { outline: none; border-radius: 4px; }
 .transcript .text:focus { background: #fff8e6; }
+.speaker-names { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.speaker-names label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; }
+.speaker-names input { width: 120px; padding: 4px 8px; }
 .interim { color: var(--muted); font-style: italic; min-height: 1.7em; margin: 8px 0 0; }
 .hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 

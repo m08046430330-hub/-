@@ -45,13 +45,15 @@
         <div class="card-head">
           <h2>文字起こし</h2>
           <div class="actions">
+            <button id="refineButton" class="small" disabled>高精度で文字起こし（話者識別）</button>
             <button id="clearButton" class="ghost small">クリア</button>
             <button id="copyTranscriptButton" class="ghost small">コピー</button>
           </div>
         </div>
+        <div id="speakerNames" class="speaker-names" hidden></div>
         <ol id="transcript" class="transcript"></ol>
         <p id="interim" class="interim"></p>
-        <p class="hint">各行はクリックして直接編集できます。</p>
+        <p class="hint">各行はクリックして直接編集できます。話者名は上の欄で一括変更できます。</p>
       </section>
 
       <section class="card">
@@ -62,7 +64,7 @@
             <button id="copySummaryButton" class="ghost small">コピー</button>
           </div>
         </div>
-        <div id="summary" class="summary"><p class="placeholder">録音終了後に「AIで議事録を作成」を押すと、要約・決定事項・ToDoを自動でまとめます。</p></div>
+        <div id="summary" class="summary"><p class="placeholder">文字起こしが終わったら「AIで議事録を作成」を押すと、要約・決定事項・ToDoを自動でまとめます。</p></div>
       </section>
     </div>
 
@@ -92,10 +94,10 @@
           <option value="ko-KR">한국어</option>
         </select>
       </label>
-      <label>Anthropic APIキー（AI議事録用）
-        <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+      <label>合言葉（管理者から共有されたもの）
+        <input id="passcode" type="password" autocomplete="off">
       </label>
-      <p class="hint">APIキーはこのブラウザ内（localStorage）にのみ保存され、Anthropic APIへの通信にだけ使われます。共用PCでは保存しないでください。</p>
+      <p class="hint">合言葉を入れると、録音終了後の高精度文字起こし（話者の自動識別）とAI議事録が使えます。</p>
       <label class="checkbox"><input id="saveAudio" type="checkbox" checked> 音声ファイルも記録する</label>
       <menu>
         <button value="cancel" class="ghost">キャンセル</button>

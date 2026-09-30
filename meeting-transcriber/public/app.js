@@ -1,11 +1,11 @@
 // 会議AI文字起こし
 // - 音声認識: ブラウザの Web Speech API（Chrome / Edge）
 // - 録音: MediaRecorder（音声ファイルとしてダウンロード可能）
-// - AI議事録: Anthropic Claude API（ブラウザから直接呼び出し）
+// - 高精度文字起こし・話者識別: AssemblyAI（サーバー経由）
+// - AI議事録: Claude（サーバー経由）
 
-const MODEL = "claude-opus-5-5";
 const STORAGE = {
-  apiKey: "mt.apiKey",
+  passcode: "mt.passcode",
   lang: "mt.lang",
   saveAudio: "mt.saveAudio",
   history: "mt.history",
@@ -30,7 +30,9 @@ const els = {
   history: $("history"),
   audioDownload: $("audioDownload"),
   settingsDialog: $("settingsDialog"),
-  apiKey: $("apiKey"),
+  passcode: $("passcode"),
+  refine: $("refineButton"),
+  speakerNames: $("speakerNames"),
   lang: $("langSelect"),
   saveAudio: $("saveAudio"),
 };
@@ -47,6 +49,7 @@ const state = {
   recorder: null,
   audioChunks: [],
   audioUrl: null,
+  audioBlob: null,
   recognition: null,
   audioCtx: null,
   levelFrame: 0,
@@ -205,13 +208,16 @@ async function startRecording() {
   }
 
   state.stream = stream;
+  state.audioBlob = null;
+  els.refine.disabled = true;
   state.recording = true;
   state.paused = false;
   state.segmentStart = Date.now();
 
   if (els.saveAudio.checked && window.MediaRecorder) {
     state.audioChunks = [];
-    state.recorder = new MediaRecorder(stream);
+    // 32kbps: 1時間で約14MB。サーバーへのアップロードを軽くする
+    state.recorder = new MediaRecorder(stream, { audioBitsPerSecond: 32000 });
     state.recorder.ondataavailable = (e) => e.data.size && state.audioChunks.push(e.data);
     state.recorder.onstop = finalizeAudio;
     state.recorder.start(1000);
@@ -278,12 +284,15 @@ function finalizeAudio() {
   if (!state.audioChunks.length) return;
   const type = state.recorder.mimeType || "audio/webm";
   const blob = new Blob(state.audioChunks, { type });
+  state.audioBlob = blob;
+  els.refine.disabled = false;
   if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
   state.audioUrl = URL.createObjectURL(blob);
   const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
   els.audioDownload.href = state.audioUrl;
   els.audioDownload.download = `${meetingTitle()}.${ext}`;
   els.audioDownload.hidden = false;
+  if (load(STORAGE.passcode, "")) refineTranscript();
 }
 
 // ---------- 音量メーター ----------
@@ -320,46 +329,102 @@ function stopLevelMeter() {
   els.level.getContext("2d").clearRect(0, 0, els.level.width, els.level.height);
 }
 
-// ---------- AI議事録（Claude API） ----------
-const SYSTEM_PROMPT = `あなたは優秀な議事録作成アシスタントです。
-会議の文字起こしを読み、日本語のMarkdownで議事録を作成してください。
-音声認識の誤変換や言い淀みが含まれるため、文脈から正しい意味を推測して整理してください。
-
-出力フォーマット:
-## 概要
-（3〜5行で会議全体の要約）
-
-## 主な議題と議論内容
-（議題ごとに見出しを付け、要点を箇条書き）
-
-## 決定事項
-（箇条書き。なければ「なし」）
-
-## ToDo（アクションアイテム）
-（「- [ ] 担当者：内容（期限）」の形式。担当者や期限が不明な場合は「未定」）
-
-## 保留・次回への持ち越し
-（箇条書き。なければ「なし」）
-
-文字起こしにない情報を創作しないでください。`;
-
-let anthropicModule = null;
-async function getClient(apiKey) {
-  if (!anthropicModule) {
-    anthropicModule = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk/+esm");
+// ---------- サーバー通信 ----------
+async function api(path, init = {}) {
+  const passcode = load(STORAGE.passcode, "");
+  if (!passcode) {
+    alert("設定で「合言葉」を入力してください。");
+    openSettings();
+    throw new Error("合言葉が未設定です");
   }
-  const Anthropic = anthropicModule.default;
-  // APIキーは利用者自身のもので、この端末のブラウザからのみ送信される
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const res = await fetch(path, {
+    ...init,
+    headers: { "X-App-Passcode": passcode, ...init.headers },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `サーバーエラー（${res.status}）`);
+  }
+  return res;
 }
 
-async function summarize() {
-  const apiKey = load(STORAGE.apiKey, "");
-  if (!apiKey) {
-    alert("AI議事録を使うには、設定からAnthropic APIキーを登録してください。");
-    openSettings();
+// ---------- 高精度文字起こし（話者識別） ----------
+async function refineTranscript() {
+  if (!state.audioBlob) {
+    alert("録音データがありません。高精度文字起こしは録音直後のみ使えます。");
     return;
   }
+  els.refine.disabled = true;
+  els.refine.textContent = "高精度で文字起こし中…";
+  setStatus("録音データを送信中…");
+  try {
+    const lang = els.lang.value.split("-")[0];
+    const res = await api(`/api/transcripts?lang=${encodeURIComponent(lang)}`, {
+      method: "POST",
+      headers: { "Content-Type": state.audioBlob.type || "application/octet-stream" },
+      body: state.audioBlob,
+    });
+    const { id } = await res.json();
+    setStatus("高精度文字起こし中（会議の長さの1〜3割ほどかかります）…");
+
+    let result;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 4000));
+      result = await (await api(`/api/transcripts/${id}`)).json();
+      if (result.status === "completed") break;
+      if (result.status === "error") throw new Error(result.error);
+    }
+
+    if (!result.utterances.length) {
+      setStatus("音声から発言を検出できませんでした");
+      return;
+    }
+    state.entries = result.utterances.map((u) => ({
+      t: u.start,
+      speaker: `話者${u.speaker}`,
+      text: u.text,
+    }));
+    renderTranscript();
+    renderSpeakerNames();
+    saveDraft();
+    setStatus("高精度文字起こしが完了しました");
+  } catch (err) {
+    setStatus(`高精度文字起こしに失敗：${err.message}`);
+  } finally {
+    els.refine.disabled = !state.audioBlob;
+    els.refine.textContent = "高精度で文字起こし（話者識別）";
+  }
+}
+
+// 「話者A」などを実名に置き換える
+function renderSpeakerNames() {
+  const speakers = [...new Set(state.entries.map((e) => e.speaker).filter(Boolean))];
+  els.speakerNames.innerHTML = "";
+  els.speakerNames.hidden = !speakers.length;
+  speakers.forEach((name) => {
+    const label = document.createElement("label");
+    label.textContent = name;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = name;
+    input.addEventListener("change", () => {
+      const next = input.value.trim();
+      if (!next || next === name) return;
+      state.entries.forEach((e) => {
+        if (e.speaker === name) e.speaker = next;
+      });
+      rememberSpeaker(next);
+      renderTranscript();
+      renderSpeakerNames();
+      saveDraft();
+    });
+    label.appendChild(input);
+    els.speakerNames.appendChild(label);
+  });
+}
+
+// ---------- AI議事録 ----------
+async function summarize() {
   if (!state.entries.length) {
     alert("文字起こしがまだありません。");
     return;
@@ -371,43 +436,28 @@ async function summarize() {
   state.summaryMarkdown = "";
 
   try {
-    const client = await getClient(apiKey);
-    const stream = client.beta.messages.stream({
-      model: MODEL,
-      max_tokens: 64000,
-      output_config: { effort: "medium" },
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `会議名：${meetingTitle()}\n日付：${new Date().toLocaleDateString("ja-JP")}\n\n<transcript>\n${transcriptText()}\n</transcript>`,
-        },
-      ],
+    const res = await api("/api/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: meetingTitle(),
+        date: new Date().toLocaleDateString("ja-JP"),
+        transcript: transcriptText(),
+      }),
     });
-
-    stream.on("text", (delta) => {
-      state.summaryMarkdown += delta;
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      state.summaryMarkdown += decoder.decode(value, { stream: true });
       els.summary.innerHTML = renderMarkdown(state.summaryMarkdown);
-    });
-
-    const message = await stream.finalMessage();
-    if (message.stop_reason === "refusal") {
-      throw new Error("AIがこの内容の処理を辞退しました。");
     }
-    if (message.stop_reason === "max_tokens") {
-      state.summaryMarkdown += "\n\n（出力が長すぎたため途中で終了しました）";
-    }
+    state.summaryMarkdown += decoder.decode();
     els.summary.innerHTML = renderMarkdown(state.summaryMarkdown);
     saveDraft();
   } catch (err) {
-    const status = err?.status;
-    let msg = err?.message || String(err);
-    if (status === 401) msg = "APIキーが正しくありません。設定を確認してください。";
-    else if (status === 429) msg = "利用上限に達しました。しばらく待ってから再度お試しください。";
-    else if (status >= 500) msg = "Anthropic APIが一時的に利用できません。時間をおいて再度お試しください。";
-    els.summary.innerHTML = `<p class="error">議事録の作成に失敗しました：${escapeHtml(msg)}</p>`;
+    els.summary.innerHTML = `<p class="error">議事録の作成に失敗しました：${escapeHtml(err.message)}</p>`;
   } finally {
     els.summarize.disabled = false;
     els.summarize.textContent = "AIで議事録を作成";
@@ -525,7 +575,10 @@ function openMeeting(item) {
   state.summaryMarkdown = item.summary || "";
   state.elapsedBefore = item.duration || 0;
   els.timer.textContent = formatTime(state.elapsedBefore);
+  state.audioBlob = null;
+  els.refine.disabled = true;
   renderTranscript();
+  renderSpeakerNames();
   els.summary.innerHTML = state.summaryMarkdown
     ? renderMarkdown(state.summaryMarkdown)
     : '<p class="placeholder">議事録はまだ作成されていません。</p>';
@@ -534,13 +587,13 @@ function openMeeting(item) {
 
 // ---------- 設定 ----------
 function openSettings() {
-  els.apiKey.value = load(STORAGE.apiKey, "");
+  els.passcode.value = load(STORAGE.passcode, "");
   els.settingsDialog.showModal();
 }
 
 els.settingsDialog.addEventListener("close", () => {
   if (els.settingsDialog.returnValue !== "save") return;
-  save(STORAGE.apiKey, els.apiKey.value.trim());
+  save(STORAGE.passcode, els.passcode.value.trim());
   save(STORAGE.lang, els.lang.value);
   save(STORAGE.saveAudio, els.saveAudio.checked);
 });
@@ -564,11 +617,13 @@ function init() {
     if (state.summaryMarkdown) els.summary.innerHTML = renderMarkdown(state.summaryMarkdown);
   }
   state.entries.forEach((e) => e.speaker && rememberSpeaker(e.speaker));
+  renderSpeakerNames();
 
   els.start.onclick = startRecording;
   els.pause.onclick = togglePause;
   els.stop.onclick = stopRecording;
   els.summarize.onclick = summarize;
+  els.refine.onclick = refineTranscript;
   $("settingsButton").onclick = openSettings;
   $("saveButton").onclick = saveMeeting;
   $("exportMdButton").onclick = () => download(`${meetingTitle()}.md`, buildMarkdown(), "text/markdown");
@@ -583,7 +638,8 @@ function init() {
     state.elapsedBefore = 0;
     els.timer.textContent = formatTime(0);
     renderTranscript();
-    els.summary.innerHTML = '<p class="placeholder">録音終了後に「AIで議事録を作成」を押すと、要約・決定事項・ToDoを自動でまとめます。</p>';
+    renderSpeakerNames();
+    els.summary.innerHTML = '<p class="placeholder">文字起こしが終わったら「AIで議事録を作成」を押すと、要約・決定事項・ToDoを自動でまとめます。</p>';
     saveDraft();
   };
   els.title.addEventListener("input", saveDraft);
