@@ -240,7 +240,7 @@ const HELP_TEXT = [
   '【シフト入力の使い方】',
   '最初に1回: 登録 フルネーム（例: 登録 井ノ上真斗）',
   '　※シフト表にない名前は自動で追加されます',
-  '提出: 10/5 16:00（1行に1日。複数行OK）',
+  '提出: 10/5 16:00（普通の文章でもOK。例: 10/6.7.8.9 20:00〜）',
   '休み: 10/5 休',
   '確認: 確認',
   '※すでに入っている日の変更は、管理者が確認して反映します',
@@ -307,14 +307,17 @@ function handleText_(userId, text) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    t.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
-      const r = writeLine_(name, line);
+    parseShiftText_(t).forEach(en => {
+      const r = applyEntry_(name, en.m, en.d, en.value);
       if (r) results.push(r);
     });
   } finally {
     lock.releaseLock();
   }
-  if (!results.length) return '入力がありませんでした。出勤する日の後ろに時間を書いて送ってください。';
+  if (!results.length) {
+    return 'シフトを読み取れませんでした。\n日付と時間を書いて送ってください。\n' +
+      '例: 10/6 20:00〜\n例: 10/6.7.8.9 20:00〜\n例: 10/6〜10/9 20時〜\n例: 10/10 休み';
+  }
   const note = results.some(r => r.indexOf('△') === 0)
     ? '\n\n△ の変更は管理者が確認してシフト表に反映します。' : '';
   return `${name}さん\n` + results.join('\n') + note;
@@ -359,18 +362,115 @@ function fmtDay_(dt) {
   return `${dt.getMonth() + 1}/${dt.getDate()}(${WD[dt.getDay()]})`;
 }
 
-function writeLine_(name, line) {
-  if (/^[【―]/.test(line)) return null; // ひな形の見出し行
-  const mt = line.match(/^(\d{1,2})[\/月](\d{1,2})日?\s*(?:[(（][^)）]*[)）])?\s*(.*)$/);
-  if (!mt) return `✕「${line}」形式が違います（例: 10/5 16:00）`;
-  const m = +mt[1], d = +mt[2], value = mt[3].trim();
-  if (!value) return null; // ひな形の空欄の日は変更しない
+// ---------- LINEの文章からシフトを読み取る ----------
+//
+// 定型のひな形でなくても読み取れるようにする。例:
+//   お疲れ様です。来週のシフトですが、
+//   10/6.7.8.9 20:00〜
+//   以上でお願いいたします。
+// → 10/6・10/7・10/8・10/9 に「20:00〜」
+// 対応する書き方:
+//   日付: 10/6  10月6日  10/6(火)  6日（月は前の行か今日から推測）
+//   並び: 10/6.7.8  10/6,7,8  10/6・7・8  10/6、7日
+//   範囲: 10/6〜9  10/6-10/9
+//   時間: 20:00  20時  20時半  20:00〜  20:00-LAST  20〜24
+//   休み: 休 休み OFF × など
+//   日付だけの行の次に時間だけの行があれば、その時間を前の日付に当てはめる
+// 挨拶など日付を含まない行は無視する。
 
+const TIME_RE = /\d{1,2}(?::\d{2}|時(?:\d{1,2}分|半)?)(?:\s*[〜-]\s*(?:\d{1,2}(?::\d{2}|時(?:\d{1,2}分|半)?)?|LAST|ラスト|L)?)?|\d{1,2}\s*[〜-]\s*(?:\d{1,2}(?::\d{2}|時)?|LAST|ラスト|L)(?![\d\/月日])|\d{1,2}\s*〜(?![\d\/月日])/i;
+const OFF_RE = /^(休|休み|やすみ|OFF|オフ|×|x|X|✕|なし|無し|削除|消去|不可|NG)$/i;
+const WDAY = '[(（][^)）]{0,3}[)）]';
+// 月/日（例 10/6, 10月6日）＋ 続く日の並び ＋ 範囲
+const DATE_GROUP_RE = new RegExp(
+  '(\\d{1,2})\\s*[\\/月]\\s*(\\d{1,2})日?(?:\\s*' + WDAY + ')?' +
+  '((?:\\s*[.,、・，．]\\s*\\d{1,2}日?(?:\\s*' + WDAY + ')?)*)' +
+  '(?:\\s*[〜-]\\s*(?:(\\d{1,2})\\s*[\\/月]\\s*)?(\\d{1,2})日?(?:\\s*' + WDAY + ')?(?!\\d|\\s*[:時]))?', 'g');
+// 月なしの日（例 6日, 6.7.8日）… 行頭のみ
+// 「6日」か「6.7.8」のように、日が付くか並びになっているときだけ日付とみなす
+const DAY_ONLY_RE = new RegExp(
+  '^(\\d{1,2})(日)?(?:\\s*' + WDAY + ')?((?:\\s*[.,、・，．]\\s*\\d{1,2}日?(?:\\s*' + WDAY + ')?)*)');
+
+function parseShiftText_(text) {
+  const [cy, cm, cd] = Utilities.formatDate(new Date(), TZ, 'yyyy,M,d').split(',').map(Number);
+  const entries = [];
+  let pending = [];
+  let lastMonth = null;
+
+  const valueOf = rest => {
+    const r = rest.replace(/^[\s:：、,。]+/, '').trim();
+    const tm = r.match(TIME_RE);
+    if (tm) return tm[0].replace(/\s+/g, '');
+    const word = r.replace(/[。、！!でお願いしますいたします希望です]+$/g, '').trim();
+    if (OFF_RE.test(word)) return '休';
+    if (/^(休|休み|OFF|オフ)/i.test(r)) return '休';
+    return '';
+  };
+  const guessMonth = d => {
+    if (lastMonth) return lastMonth;
+    return d < cd - 7 ? (cm % 12) + 1 : cm; // 1週間以上前の日付なら来月とみなす
+  };
+  const daysOf = (m, first, listText, rangeM, rangeD) => {
+    const out = [{ m, d: first }];
+    (listText.match(/\d{1,2}/g) || []).forEach(x => out.push({ m, d: +x }));
+    if (rangeD) {
+      const endM = rangeM || m;
+      let dt = new Date(cy, m - 1, first);
+      const last = new Date(cy + (endM < m ? 1 : 0), endM - 1, rangeD);
+      for (let i = 0; i < 31 && dt < last; i++) {
+        dt = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1);
+        out.push({ m: dt.getMonth() + 1, d: dt.getDate() });
+      }
+    }
+    return out;
+  };
+
+  normalize_(text).replace(/[～~〜]/g, '〜').replace(/[－ー−―‐]/g, m0 => m0 === 'ー' ? m0 : '-')
+    .split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+      if (/^【/.test(line)) return; // ひな形の見出し
+      const groups = [];
+      let mt;
+      DATE_GROUP_RE.lastIndex = 0;
+      while ((mt = DATE_GROUP_RE.exec(line))) {
+        groups.push({ start: mt.index, end: DATE_GROUP_RE.lastIndex,
+          days: daysOf(+mt[1], +mt[2], mt[3] || '', mt[4] ? +mt[4] : null, mt[5] ? +mt[5] : null) });
+        lastMonth = +(mt[4] || mt[1]);
+      }
+      if (!groups.length) {
+        const dm = line.match(DAY_ONLY_RE);
+        if (dm && (dm[2] || dm[3])) {
+          const m = guessMonth(+dm[1]);
+          groups.push({ start: 0, end: dm[0].length, days: daysOf(m, +dm[1], dm[3] || '', null, null) });
+        }
+      }
+      if (!groups.length) {
+        // 日付のない行: 直前の日付だけの行に時間を当てはめる
+        const v = pending.length ? valueOf(line) : '';
+        if (v) { pending.forEach(x => entries.push({ m: x.m, d: x.d, value: v })); pending = []; }
+        return;
+      }
+      // 同じ行で時間のない日付が続いたら、次に出てくる時間をまとめて当てはめる
+      let linePending = [];
+      groups.forEach((g, i) => {
+        const rest = line.slice(g.end, i + 1 < groups.length ? groups[i + 1].start : line.length);
+        const v = valueOf(rest);
+        const days = linePending.concat(g.days);
+        if (v) { days.forEach(x => entries.push({ m: x.m, d: x.d, value: v })); linePending = []; }
+        else linePending = days;
+      });
+      pending = linePending;
+    });
+  return entries;
+}
+
+// 1日分をシフト表に当てはめる（空いている日だけ書き込み、変更は受付に記録）
+function applyEntry_(name, m, d, value) {
   const [cy, cm] = Utilities.formatDate(new Date(), TZ, 'yyyy,M').split(',').map(Number);
   const y = (cm - m > 6) ? cy + 1 : (m - cm > 6 ? cy - 1 : cy);
-  const sh = ss_().getSheetByName(y + '.' + m);
-  if (!sh) return `✕ ${m}月のシートがまだありません`;
+  if (m < 1 || m > 12) return null;
   if (d < 1 || d > new Date(y, m, 0).getDate()) return `✕ ${m}/${d} は存在しない日付です`;
+  const sh = ss_().getSheetByName(y + '.' + m);
+  if (!sh) return `✕ ${m}/${d} … ${m}月のシートがまだありません`;
 
   const me = readStaff_(sh).find(s => String(s.name).replace(/\s/g, '') === name);
   if (!me) return `✕ ${m}月のシートに${name}さんの行がありません`;
