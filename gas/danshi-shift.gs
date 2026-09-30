@@ -243,6 +243,8 @@ const HELP_TEXT = [
   '提出: 10/5 16:00（普通の文章でもOK。例: 10/6.7.8.9 20:00〜）',
   '休み: 10/5 休',
   '確認: 確認',
+  '※1台のLINEで他の人の分を送るときは、1行目にその人のフルネームを書いてください',
+  '　例: 高橋海晴 / 10/6.7 20:00〜 ・ 確認 高橋海晴 ・ 週テンプレ 高橋海晴',
   '※すでに入っている日の変更は、管理者が確認して反映します',
   'ひな形: テンプレ（来月分）／テンプレ 10（10月分）',
   '1週間: 週テンプレ（来週分）／今週テンプレ（今週分）',
@@ -293,14 +295,20 @@ function handleText_(userId, text) {
     return `${name}さんとして登録しました。` + (added ? '（シフト表に追加しました）' : '') + '\n\n' + HELP_TEXT;
   }
 
-  const name = props.getProperty(key);
-  if (!name) return 'はじめに「登録 名前」を送ってください。\n\n' + HELP_TEXT;
-  if (/^(確認|シフト)$/.test(t)) return myShift_(name);
   if (/^(ヘルプ|使い方|help)$/i.test(t)) return HELP_TEXT;
-  const wk = t.match(/^(週|今週|来週)(テンプレ|テンプレート|ひな形|雛形|雛型)?$/) ||
-    t.match(/^(?:テンプレ|テンプレート|ひな形|雛形|雛型)\s*(週|今週|来週)$/);
+
+  // メッセージにシフト表の名前が書いてあれば、その人の分として扱う
+  // （1台のLINEから複数の人の分を送れるようにする。書いていなければ登録した名前）
+  const named = findStaffName_(t);
+  const name = named ? named.name : props.getProperty(key);
+  if (!name) return '誰のシフトか分かりませんでした。\n1行目にフルネームを書いて送るか、はじめに「登録 名前」を送ってください。\n\n' + HELP_TEXT;
+  const cmd = named ? t.replace(named.re, ' ').replace(/^[\s:：、,さん]+|[\s:：、,]+$/g, '').trim() : t;
+
+  if (/^(確認|シフト)$/.test(cmd)) return myShift_(name);
+  const wk = cmd.match(/^(週|今週|来週)(テンプレ|テンプレート|ひな形|雛形|雛型)?$/) ||
+    cmd.match(/^(?:テンプレ|テンプレート|ひな形|雛形|雛型)\s*(週|今週|来週)$/);
   if (wk) return weekTemplate_(name, wk[1] === '今週' ? 0 : 1);
-  const tpl = t.match(/^(テンプレ|テンプレート|ひな形|雛形|雛型)\s*(\d{1,2})?月?(分)?$/);
+  const tpl = cmd.match(/^(テンプレ|テンプレート|ひな形|雛形|雛型)\s*(\d{1,2})?月?(分)?$/);
   if (tpl) return template_(name, tpl[2] ? +tpl[2] : null);
 
   const results = [];
@@ -360,6 +368,19 @@ function templateMessages_(name, label, days) {
 
 function fmtDay_(dt) {
   return `${dt.getMonth() + 1}/${dt.getDate()}(${WD[dt.getDay()]})`;
+}
+
+// 文中に出てくるシフト表の名前を探す（姓名の間のスペースは無視、長い名前を優先）
+function findStaffName_(text) {
+  const latest = monthSheets_().pop();
+  if (!latest) return null;
+  const esc = c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hits = readStaff_(latest.sheet)
+    .map(s => String(s.name).replace(/\s/g, ''))
+    .filter(n => n && text.replace(/\s/g, '').indexOf(n) >= 0)
+    .sort((a, b) => b.length - a.length);
+  if (!hits.length) return null;
+  return { name: hits[0], re: new RegExp(hits[0].split('').map(esc).join('\\s*'), 'g') };
 }
 
 // ---------- LINEの文章からシフトを読み取る ----------
