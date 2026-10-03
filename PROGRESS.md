@@ -6,7 +6,9 @@
 - Etsy ショップ: 420WEEDIOVESHOP / Printify ショップ ID 29108577（My Etsy Store）
 - Printify API: 環境の API 認証情報で自動付与。ヘッダー `User-Agent: printify-price-script` が必須（無いと 403）
 - Etsy API: 承認済み（2026-09-30）。認証情報 `x-api-key: keystring:shared_secret` を環境に登録済み。
-  新しいセッションで `python tools/etsy_stats.py` を実行して接続テストする（未確認）
+  接続テスト（2026-10-03）: Printify 側は成功。Etsy 側は 403
+  「Invalid API key: should be in the format 'keystring:shared_secret'」。
+  環境に登録したキーの形式が違う → 環境設定でキーを「キーストリング:共有された秘密」の形に直してから再テストする
 - 利益計算: Etsy 手数料 ≒ 価格×9.4% + $0.96、1ドル=150円、目標利益は1個あたり約500円以下
 
 ## ⚠️ 現在の障害
