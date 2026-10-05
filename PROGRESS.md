@@ -6,13 +6,17 @@
 - Etsy ショップ: 420WEEDIOVESHOP / Printify ショップ ID 29108577（My Etsy Store）
 - Printify API: 環境の API 認証情報で自動付与。ヘッダー `User-Agent: printify-price-script` が必須（無いと 403）
 - Etsy API: 承認済み（2026-09-30）。認証情報 `x-api-key: keystring:shared_secret` を環境に登録済み。
-  新しいセッションで `python tools/etsy_stats.py` を実行して接続テストする（未確認）
+  接続テスト（2026-10-03）: Printify 側は成功。Etsy 側は 403
+  「Invalid API key: should be in the format 'keystring:shared_secret'」。
+  環境に登録したキーの形式が違う → 環境設定でキーを「キーストリング:共有された秘密」の形に直してから再テストする
 - 利益計算: Etsy 手数料 ≒ 価格×9.4% + $0.96、1ドル=150円、目標利益は1個あたり約500円以下
 
 ## ⚠️ 現在の障害
 - Payoneer の本人確認が通らず、Etsy がショップを「おやすみモード」にした（2026-09-30）。
   このため新規出品・更新が Printify で「Publishing error」になる。
 - Payoneer 再申請済み・審査中（2026-10-01、数日）。承認後、Etsy のおやすみモード解除を確認してから再公開する。
+- 2026-10-05: 書類（住民票・電気料金の画面）を提出し、Payoneer から「必要な書類をすべて受領・審査中（通常2営業日）」のメールが届いた。
+  サポート（問い合わせ番号 261004-011223）も手動審査を依頼済み。24時間たっても更新がなければ、同じ問い合わせに返信して催促する。
 
 ## 商品一覧
 | 商品 | Printify ID | Etsy ID | 価格 | 利益(円) | 状態 |
@@ -36,3 +40,4 @@
 - tools/printify_price.py: 価格チェック（確認のみがデフォルト）
 - tools/etsy_stats.py: Etsy の閲覧数・お気に入り数・価格の一覧（確認のみ）
 - 作成後ファイル/: 作成したデザイン画像（高解像度）
+- LISTING_IDEAS.md: 商品ページ（タイトル・タグ・説明）の改善案。未反映。ショップ再開後、確認を取ってから反映する
