@@ -5,8 +5,9 @@
 ## ショップ・接続
 - Etsy ショップ: 420WEEDIOVESHOP / Printify ショップ ID 29108577（My Etsy Store）
 - Printify API: 環境の API 認証情報で自動付与。ヘッダー `User-Agent: printify-price-script` が必須（無いと 403）
-- Etsy API: 承認済み（2026-09-30）。認証情報 `x-api-key: keystring:shared_secret` を環境に登録済み。
-  新しいセッションで `python tools/etsy_stats.py` を実行して接続テストする（未確認）
+- Etsy API: 接続成功（2026-10-06、4回目のテストで解決）。shop_id 68269935。認証情報 `x-api-key: keystring:shared_secret`
+  （1行・半角コロン）を環境に登録済み。値の変更は新しいセッションから有効。読み取りは `python3 tools/etsy_stats.py --log etsy_stats_log.csv`
+  （結果は etsy_api_test.md / etsy_stats_log.csv）。ショップポリシー（返品等）は未設定
 - 利益計算: Etsy 手数料 ≒ 価格×9.4% + $0.96、1ドル=150円、目標利益は1個あたり約500円以下
 
 ## 決済登録（解決済み）
