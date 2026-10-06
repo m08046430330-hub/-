@@ -31,6 +31,8 @@
 - 未設定だと公開・更新が「Publishing error」になる。2026-10-05 に全商品へ設定済み。
 - 値は文字列で送る。色の ID: 1 Black / 10 White / 11 Yellow / 1213 Beige（etsy_property:200=主色、52047899002=副色）。
 - sales_channel_properties の PUT では画像は減らない（確認済み）。
+- 2026-10-06 確認: 色（200/52047899002）と絵柄の属性は Printify から再公開しても Etsy に届かない（マグ3件とも未設定）。
+  素材・スタイル・寸法・自動更新・写真の説明文も空。Etsy 側の書き込みは OAuth 未設定のため、Etsy 画面で手入力する（etsy_mouse_mug_details.md）
 
 ## ショップの見た目（2026-10-05 設定済み）
 - アイコン: 作成後ファイル/shop_icon_flag_heart_1000.png、バナー: 作成後ファイル/shop_banner_flag_heart_3360x840.png
