@@ -41,6 +41,10 @@
 - GPSR: 「EU で販売するが GPSR 情報は表示しない」を選択（EU 責任者がいないため）。求められたら EU/UK 販売制限に切替
 - 支払い: カード登録済み（ユーザー申告、2026-10-06）。請求通貨 USD。API からは確認不可
 
+## 自動の見張り（ルーティン）
+- 「Printify注文の見張り（1日2回）」trig_01Fgtfne3bBMAz8z6JfjN6Xf：毎日 8:52 / 20:52（日本時間）、新規注文・問題のある注文をスマホに通知。GET のみ
+- 「Payoneer・Etsyメール確認」trig_017Dmj5vis1CJJaiqVasAza5：役目終了で停止中（Gmail コネクタが付けられず動作しなかった）
+
 ## Etsy の画面操作
 - クラウドのセッションからは etsy.com に届かない。画面操作は PC の Claude デスクトップアプリ＋Claude in Chrome で行う。
 
