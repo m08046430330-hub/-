@@ -71,3 +71,5 @@
 - Printify の「Copy of Japan Weed Love Shop T-Shirt」（未公開の複製）はユーザーの依頼で削除済み
 - 保留: 420 リーフマグの Etsy 在庫が5（variants を再送信すれば直る見込み）、Stoner Cats Tシャツの値下げ検討、長袖Tシャツの写真選択→公開
 - このクラウドセッションからは Etsy の画面操作はできない。画面操作は PC の Chrome の Claude（拡張機能）で行う
+- 2026-10-08: 漢字Tシャツ・漢字黒マグの属性を Printify で修正（文字列、絵柄 2955/2962）して2回再公開 → Etsy に届くが属性は0件のまま。
+  Printify の custom_attributes は公開済み出品の更新では Etsy に反映されないと判断。色などは Etsy 画面で入力する
