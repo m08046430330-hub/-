@@ -16,6 +16,18 @@ Printify からは色が Etsy に届かない（確認済み）ので、Etsy の
 
 （入力済み: Stoner Cats Tシャツ White/Yellow、Japan Weed Tシャツ White/Black）
 
+
+## 編集画面への直接リンク（クリックするとその商品の編集画面が開く。ログインが必要）
+- [ ] 漢字Tシャツ → White / Black: https://www.etsy.com/your/shops/me/listing-editor/edit/4585522299
+- [ ] 漢字 黒マグ → Black / White: https://www.etsy.com/your/shops/me/listing-editor/edit/4585491734
+- [ ] Stoner Mouse マグ → White / Black: https://www.etsy.com/your/shops/me/listing-editor/edit/4589431758
+- [ ] Stoner Mouse 長袖 → White / Black: https://www.etsy.com/your/shops/me/listing-editor/edit/4592364716
+- [ ] Stoner Cats マグ → White / Yellow: https://www.etsy.com/your/shops/me/listing-editor/edit/4589392223
+- [ ] 420 リーフマグ → White / Red: https://www.etsy.com/your/shops/me/listing-editor/edit/4584546414
+- [ ] ローズブーケ トート → Beige / Red: https://www.etsy.com/your/shops/me/listing-editor/edit/4585451765
+
+2026-10-13 時点の確認: 7件とも まだ空（点検係が API で確認）。
+
 ## 手順（PC の Chrome で。1商品 1分ほど）
 1. Etsy にログイン → 「Shop Manager（ショップ管理）」→「Listings（出品）」
 2. 商品をクリックして編集画面を開く
