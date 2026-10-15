@@ -98,3 +98,10 @@
 - 420 リーフマグ: Printify から variants だけ再送信（title/description/images/tags は送らず）→ Etsy 在庫 5 → 999 に回復、タグ13のまま
 - 盆栽Tシャツの作り手は i_did になっていて直し不要
 - 残り（Etsy 画面のみ）: 4出品の色・盆栽トートの属性・写真の説明文・ポリシー文 → chrome_etsy_step4.md を Chrome の Claude に貼る
+
+## 2026-10-15 名前入れ漢字の商品（kanji_name_plan.md）
+- ユーザー了承: Printify の注文承認を手動に（ユーザーが Printify 画面で操作）、Tシャツ $29.99・マグ $16.99
+- 下書き作成: Tシャツ 6ad0367ba4977e30ad0b5b8a / マグ 6ad036804b954522360ef7ec（未公開）
+- 道具: tools/kanji_name/make.py（名前ごとのデザイン作成）
+- 公開前に: 承認を手動にしたことの確認 → 公開（ユーザー同意後）→ Etsy 画面で Personalization 欄をオン
+- ④の確認（check_step4_20261015.md）: 色・写真の説明文・「オーダーメイド」は未対応のまま。リーフマグ在庫 999
