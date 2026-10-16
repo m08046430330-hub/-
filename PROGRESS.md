@@ -112,3 +112,4 @@
 - 2026-10-16 名前入り2商品の名前入力欄は設定済み（必須・10文字・案内文あり）。
   確認は `listings/{id}?includes=personalization` の personalization_questions を見る（古い personalization_instructions 欄は空のまま返る）
 - 2026-10-16 03:58 UTC に価格が利益基準で一括変更（名前入りTシャツ $17.58〜、マグ $10.06）。ユーザー判断で このまま（利益は1個あたり約500円が方針）
+- 2026-10-16 「オーダーの相談を受け付ける」オンを確認（accepts_custom_requests=True）
