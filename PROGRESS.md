@@ -109,3 +109,6 @@
 ## 2026-10-16 名前入り漢字を公開
 - Tシャツ Etsy 4595706234 / マグ Etsy 4595683631（Printify 6ad0367ba4977e30ad0b5b8a / 6ad036804b954522360ef7ec）。タグ13・写真 Tシャツ4/マグ5
 - Etsy 画面で要設定: 名前入力欄、作り手（someone_else→自分）、自動更新オン、セクション、主色・副色、写真の追加（Printify 画面でモックアップ選択）
+- 2026-10-16 名前入り2商品の名前入力欄は設定済み（必須・10文字・案内文あり）。
+  確認は `listings/{id}?includes=personalization` の personalization_questions を見る（古い personalization_instructions 欄は空のまま返る）
+- 2026-10-16 03:58 UTC に価格が利益基準で一括変更（名前入りTシャツ $17.58〜、マグ $10.06）。戻すかユーザー確認中
