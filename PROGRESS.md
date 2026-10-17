@@ -29,6 +29,12 @@
 | Japanese Bonsai Vinyl Tシャツ（表=昼の盆栽、裏=夜の盆栽／黒・白 S〜3XL） | 6acec9f7357b3775a4016049 | 4594893674 | $22.99（S〜XL）/25.99（2XL）/28.99（3XL） | 396/427/491 | 2026-10-14 公開（API、写真4枚・タグ13）。Etsy 属性0・自動更新オフ→画面で設定要。絵は3倍拡大＋角丸、表裏とも正方形・同じ大きさ、左上に赤い「四二零 420」の判子 |
 | 420 Stoner Cats パーカー（Gildan 18500、白・Sand・Sport Grey S〜3XL、表=猫の絵（中サイズ scale0.72）・背中=大麻の葉＋下に手書き420・首に420） | 6ad1bb482a7b57e9090d44b5 | 4596517422 | $36.99（S〜XL）/38.99（2XL）/40.99（3XL） | 584/525/597 | 2026-10-16 公開（Printify Choice、原価 $28.66/30.86/32.20）。Etsy で active・写真6枚・タグ13・自動更新ON・主色White/副色Green・袖/素材/Pullover 済み（10-16確認）。10-16 再確認: セクション T-Shirts・Streetwear・Animal 入力済み。残り: 配送プロファイルが T シャツ用(316212479711)と別の 318142368400（API で中身が見えないため画面で確認） |
 
+
+## Etsy 書き込み OAuth（2026-10-17）
+- 環境の ETSY_REFRESH_TOKEN で更新に成功（権限: listings_r listings_w shops_r transactions_r）。ただし使うと鍵が入れ替わるため、環境の古い値は無効になった可能性あり
+- 書き込みが止まっている原因: 環境の ETSY_API_KEY の後半（shared_secret）が本物でなく、全角かっこ入りの仮の文字（15文字）になっている → Etsy が「Shared secret が必要」と 403
+- openapi.etsy.com 経由（プロキシが鍵を付ける）だと Bearer トークンが届かず 401
+- 次にやること: 環境設定で ETSY_API_KEY を本物の「keystring:shared_secret」（1行・半角コロン）に直す → 新しいセッションで tools/etsy_oauth_colors.py。古い更新用の鍵が無効なら auth からやり直し（ETSY_REDIRECT_URI も環境に登録が必要）
 ## Etsy の属性（custom_attributes）
 - 未設定だと公開・更新が「Publishing error」になる。2026-10-05 に全商品へ設定済み。
 - 値は文字列で送る。色の ID: 1 Black / 10 White / 11 Yellow / 1213 Beige（etsy_property:200=主色、52047899002=副色）。
