@@ -4,3 +4,7 @@ __pycache__/
 # 会員名簿・お客様ポイント台帳（個人情報）はリポジトリに入れない
 *MEMBER_LIST*
 *ポイント台帳*
+
+# Etsy OAuth のトークン（秘密情報）はリポジトリに入れない
+.etsy_token.json
+.etsy_oauth_state.json
