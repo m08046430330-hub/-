@@ -13,8 +13,12 @@
 必要な環境変数:
   ETSY_API_KEY       "keystring:shared_secret"（1行・半角コロン）
   ETSY_REDIRECT_URI  Etsy 開発者ページのアプリに登録したコールバック URL（完全一致）
+  ETSY_REFRESH_TOKEN （任意）.etsy_token.json が無いときに使う更新用の鍵。
+                     これがあれば新しいセッションでも auth なしで書き込める（発行から約90日有効）
+
+鍵が使えるかの確認だけ: python3 tools/etsy_oauth_colors.py check
 """
-import base64, hashlib, json, os, secrets, sys, time, urllib.parse, urllib.request
+import base64, hashlib, json, os, secrets, sys, time, urllib.error, urllib.parse, urllib.request
 
 SHOP_ID = 68269935
 STATE_FILE = ".etsy_oauth_state.json"
@@ -87,16 +91,38 @@ def cmd_token(code):
     print("トークンを保存しました（" + TOKEN_FILE + "）。有効期限が切れても refresh_token で自動更新します。")
 
 
-def access_token():
-    t = json.load(open(TOKEN_FILE))
-    if time.time() > t.get("expires_at", 0):
-        t2 = post_form("https://api.etsy.com/v3/public/oauth/token", {
+def refresh(refresh_token):
+    try:
+        t = post_form("https://api.etsy.com/v3/public/oauth/token", {
             "grant_type": "refresh_token", "client_id": api_key().split(":")[0],
-            "refresh_token": t["refresh_token"],
+            "refresh_token": refresh_token,
         })
-        save_token(t2)
-        t = t2
+    except urllib.error.HTTPError as e:
+        sys.exit(f"更新用の鍵が使えません（{e.code}）。auth からやり直し、"
+                 "環境設定の ETSY_REFRESH_TOKEN も新しい値に入れ替えてください")
+    save_token(t)
+    return t
+
+
+def access_token():
+    if os.path.exists(TOKEN_FILE):
+        t = json.load(open(TOKEN_FILE))
+    else:
+        r = os.environ.get("ETSY_REFRESH_TOKEN", "").strip()
+        if not r:
+            sys.exit("鍵がありません。auth → token を行うか、環境設定に ETSY_REFRESH_TOKEN を入れてください")
+        t = refresh(r)
+    if time.time() > t.get("expires_at", 0):
+        t = refresh(t["refresh_token"])
     return t["access_token"]
+
+
+def cmd_check():
+    url = f"https://api.etsy.com/v3/application/shops/{SHOP_ID}/listings/{TARGETS[0][0]}/properties"
+    req = urllib.request.Request(url, headers={"x-api-key": api_key(), "Authorization": "Bearer " + access_token()})
+    with urllib.request.urlopen(req) as r:
+        json.load(r)
+    print("OK: Etsy の鍵は使えます（権限: " + json.load(open(TOKEN_FILE)).get("scope", "?") + "）")
 
 
 def put_property(listing_id, prop, color):
@@ -132,6 +158,8 @@ if __name__ == "__main__":
         cmd_auth()
     elif a[0] == "token" and len(a) == 2:
         cmd_token(a[1])
+    elif a[0] == "check":
+        cmd_check()
     elif a[0] == "colors":
         cmd_colors("--dry-run" in a)
     else:

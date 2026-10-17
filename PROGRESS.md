@@ -35,7 +35,9 @@
 - 書き込みは api.etsy.com に x-api-key＋Bearer で直接送る（openapi.etsy.com 経由だと Bearer が届かず 401）。属性の読み取りは /shops/68269935/listings/{id}/properties
 - 2026-10-17 tools/etsy_oauth_colors.py colors で残り5件の主色・副色を書き込み、読み直して確認済み:
   名入れTシャツ Black/White、盆栽トート Beige/Green、Stoner Mouse 長袖 White/Black、420 リーフマグ White/Red、ローズブーケ トート Beige/Red
-- 鍵はこのセッションのコンテナ内だけ。新しいセッションでは auth からやり直す（refresh_token は使うと入れ替わる）
+- 常時書き込み: スクリプトは .etsy_token.json が無いと環境の ETSY_REFRESH_TOKEN から自動で鍵を取る（新しいセッションでも auth 不要）。
+  一度使った refresh_token でも再び使えることを確認（2026-10-17）。ただし発行から約90日で切れる → そのときは auth からやり直し、環境の ETSY_REFRESH_TOKEN を入れ替える
+- 鍵が使えるかの確認: python3 tools/etsy_oauth_colors.py check
 ## Etsy の属性（custom_attributes）
 - 未設定だと公開・更新が「Publishing error」になる。2026-10-05 に全商品へ設定済み。
 - 値は文字列で送る。色の ID: 1 Black / 10 White / 11 Yellow / 1213 Beige（etsy_property:200=主色、52047899002=副色）。
