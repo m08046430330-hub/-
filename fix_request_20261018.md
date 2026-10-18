@@ -9,7 +9,7 @@
   "Because every item is made to order just for you, I can't accept returns or exchanges for change of mind or wrong size. If your item arrives damaged or with a printing error, please message me within 14 days with a photo and I'll send a replacement or refund."
   ※ Etsy 側の新しい返品ポリシー画面（return_policy_id 1519536307261: 返品・交換不可）とも内容が合っている
 
-## 2. 写真の説明文（代替テキスト）14出品・170枚
+## 2. 写真の説明文（代替テキスト）14出品・170枚 → ✅ 2026-10-18 作成係が入力・確認済み
 - 文は etsy_alt_texts.json に用意済み（出品ID → 画像ID → alt_text）
 - 書き込み方: 画像ごとに POST /v3/application/shops/68269935/listings/{listing_id}/images に
   listing_image_id と alt_text を送る（画像は増えない・順番も変わらない。最初に1件だけ試して読み直すこと）
