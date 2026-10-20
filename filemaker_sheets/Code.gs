@@ -1,13 +1,18 @@
 /**
- * FileMaker で書き出した Excel/CSV を「女性台帳試作品」シートに自動で取り込む。
+ * FileMaker で書き出した Excel/CSV を、ファイル名ごとに決まったシートへ自動で取り込む。
  * Google ドライブの「FileMaker書き出し」フォルダを5分ごとに確認し、新しいファイルがあれば反映する。
  * 準備：エディタ左の「サービス」で Drive API を追加 → setup を1回実行。
  */
 
 const FOLDER_ID = '1aL4aBjF6PlcI4pGr4Zg9YYr1Ac6ox7td';
-const SHEET_NAME = '女性台帳';
 
-// シートの見出し → FileMaker 側で使われている可能性のある見出し
+// 書き出すファイル名（拡張子なし） → 取り込み先のシート
+const TARGETS = [
+  { file: '女性台帳試作品', sheet: '女性台帳' },
+  { file: '女性情報', sheet: '女性情報' },
+];
+
+// シートの見出し → FileMaker 側の見出し（見出しセルにメモがあれば、そちらを優先）
 const ALIASES = {
   '女性ID': ['女性ID', 'CastID', 'ID'],
   '在籍女性No': ['在籍女性No', 'C_在籍CastNO'],
@@ -33,36 +38,57 @@ const CHECKBOX_COLUMNS = ['売上管理表に表示', '当日出勤'];
 
 function setup() {
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'importLatest')
+    .filter(t => ['importLatest', 'importAll'].indexOf(t.getHandlerFunction()) >= 0)
     .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('importLatest').timeBased().everyMinutes(5).create();
-  importLatest(true);
+  ScriptApp.newTrigger('importAll').timeBased().everyMinutes(5).create();
+  importAll(true);
 }
 
-function importLatest(force) {
+function importAll(force) {
+  const latest = {};
   const files = DriveApp.getFolderById(FOLDER_ID).getFiles();
-  let latest = null;
   while (files.hasNext()) {
     const f = files.next();
-    if (!/\.(xlsx|csv)$/i.test(f.getName())) continue;
-    if (!latest || f.getLastUpdated() > latest.getLastUpdated()) latest = f;
+    const m = f.getName().match(/^(.*)\.(xlsx|csv)$/i);
+    if (!m) continue;
+    const key = m[1].trim();
+    if (!latest[key] || f.getLastUpdated() > latest[key].getLastUpdated()) latest[key] = f;
   }
-  if (!latest) return;
+  TARGETS.forEach(t => {
+    if (latest[t.file]) importFile_(latest[t.file], t.sheet, force === true);
+  });
+}
 
+function importFile_(file, sheetName, force) {
   const props = PropertiesService.getScriptProperties();
-  const stamp = latest.getId() + '@' + latest.getLastUpdated().getTime();
-  if (force !== true && props.getProperty('lastImported') === stamp) return;
+  const stampKey = 'lastImported:' + sheetName;
+  const stamp = file.getId() + '@' + file.getLastUpdated().getTime();
+  if (!force && props.getProperty(stampKey) === stamp) return;
 
-  const src = (/\.xlsx$/i.test(latest.getName()) ? readXlsx_(latest) : readCsv_(latest))
+  const src = (/\.xlsx$/i.test(file.getName()) ? readXlsx_(file) : readCsv_(file))
     .filter(r => r.some(v => String(v).trim() !== ''));
   if (src.length < 2) return;
   const srcHeader = src[0].map(h => String(h).trim());
   const body = src.slice(1);
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  const firstRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-  const header = firstRow.slice(0, firstRow.indexOf('') < 0 ? firstRow.length : firstRow.indexOf(''));  // 右の「最終更新」は含めない
-  const srcIndex = header.map(h => (ALIASES[h] || [h]).map(a => srcHeader.indexOf(a)).find(i => i >= 0));
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+  if (sheet.getLastColumn() === 0 || String(sheet.getRange(1, 1).getValue()) === '') {
+    // 初回は FileMaker の見出しをそのまま使い、見出しを書き換えても対応が分かるようメモに残す
+    const head = sheet.getRange(1, 1, 1, srcHeader.length);
+    head.setValues([srcHeader]).setNotes([srcHeader]).setFontWeight('bold').setBackground('#d8d1f2');
+    sheet.setFrozenRows(1);
+  }
+
+  const width = sheet.getLastColumn();
+  const firstRow = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
+  const notes = sheet.getRange(1, 1, 1, width).getNotes()[0];
+  const end = firstRow.indexOf('');
+  const header = firstRow.slice(0, end < 0 ? firstRow.length : end);
+  const srcIndex = header.map((h, c) => {
+    const names = notes[c] ? [notes[c].trim()] : (ALIASES[h] || [h]);
+    return names.map(a => srcHeader.indexOf(a)).find(i => i >= 0);
+  });
 
   const rows = body.map((r, n) => header.map((h, c) => {
     const i = srcIndex[c];
@@ -77,13 +103,18 @@ function importLatest(force) {
   try {
     const last = sheet.getLastRow();
     if (last > 1) sheet.getRange(2, 1, last - 1, header.length).clearContent();
-    sheet.getRange(2, 1, rows.length, header.length).setValues(rows);
+    // 口座番号などの先頭0が消えないよう文字列で書く（チェックボックスの列だけは除く）
+    const range = sheet.getRange(2, 1, rows.length, header.length).setNumberFormat('@');
+    header.forEach((h, c) => {
+      if (CHECKBOX_COLUMNS.indexOf(h) >= 0) sheet.getRange(2, c + 1, rows.length, 1).setNumberFormat('General');
+    });
+    range.setValues(rows);
     sheet.getRange(1, header.length + 2).setValue('最終更新: ' +
-      Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') + '（' + latest.getName() + '）');
+      Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') + '（' + file.getName() + '）');
   } finally {
     lock.releaseLock();
   }
-  props.setProperty('lastImported', stamp);
+  props.setProperty(stampKey, stamp);
 }
 
 function readCsv_(file) {
