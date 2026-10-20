@@ -36,6 +36,10 @@ const ALIASES = {
 };
 const CHECKBOX_COLUMNS = ['売上管理表に表示', '当日出勤'];
 
+// 「人件費」で書き出したファイルの人件費の合計を、売上管理表のその日の「女子給」に入れる
+const SALES_SHEET_ID = '1UgBqm6epbf8pbF85gh3oK2C9oM4Q6MC8S3nRmpepaMo';  // いまは試作のコピー
+const JINKENHI_FILE = '人件費';
+
 function setup() {
   ScriptApp.getProjectTriggers()
     .filter(t => ['importLatest', 'importAll'].indexOf(t.getHandlerFunction()) >= 0)
@@ -57,6 +61,47 @@ function importAll(force) {
   TARGETS.forEach(t => {
     if (latest[t.file]) importFile_(latest[t.file], t.sheet, force === true);
   });
+  if (latest[JINKENHI_FILE]) importJinkenhi_(latest[JINKENHI_FILE], force === true);
+}
+
+function importJinkenhi_(file, force) {
+  const props = PropertiesService.getScriptProperties();
+  const stamp = file.getId() + '@' + file.getLastUpdated().getTime();
+  if (!force && props.getProperty('lastImported:人件費') === stamp) return;
+
+  const src = /\.xlsx$/i.test(file.getName()) ? readXlsx_(file) : readCsv_(file);
+  const header = src[0].map(h => String(h).trim());
+  // 「人件費(残り)」ではなく「人件費」の列を合計する
+  let col = header.indexOf('人件費');
+  if (col < 0) col = header.findIndex(h => h.indexOf('人件費') >= 0 && h.indexOf('残') < 0);
+  if (col < 0) throw new Error('人件費の列が見つかりません: ' + header.join(', '));
+  const toNum = v => Number(String(v).replace(/[,¥\s]/g, '')) || 0;
+  const total = src.slice(1).reduce((sum, r) => sum + toNum(r[col]), 0);
+
+  // 日付の列があればそれを使い、なければ書き出した時刻（朝6時前は前日の営業分）
+  const dateCol = header.findIndex(h => /日付|出勤日|営業日/.test(h));
+  let date = null;
+  if (dateCol >= 0) {
+    const v = src.slice(1).map(r => String(r[dateCol]).trim()).find(v => v);
+    if (v) date = new Date(v.replace(/-/g, '/'));
+  }
+  if (!date || isNaN(date)) {
+    date = new Date(file.getLastUpdated().getTime() - 6 * 3600 * 1000);
+  }
+  const ym = Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy.M');
+  const day = Number(Utilities.formatDate(date, 'Asia/Tokyo', 'd'));
+
+  const sheet = SpreadsheetApp.openById(SALES_SHEET_ID).getSheetByName(ym);
+  if (!sheet) throw new Error('売上管理表に「' + ym + '」のタブがありません');
+  const days = sheet.getRange(2, 1, 31, 1).getValues().map(r => Number(r[0]));
+  const row = days.indexOf(day);
+  if (row < 0) throw new Error('売上管理表の「' + ym + '」に ' + day + ' 日の行がありません');
+  const girlsCol = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].indexOf('女子給') + 1;
+  if (girlsCol < 1) throw new Error('売上管理表に「女子給」の列がありません');
+  sheet.getRange(row + 2, girlsCol).setValue(total);
+
+  props.setProperty('lastImported:人件費', stamp);
+  Logger.log(ym + ' ' + day + '日の女子給に ' + total + ' を入れました');
 }
 
 function importFile_(file, sheetName, force) {
