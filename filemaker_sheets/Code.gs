@@ -120,8 +120,8 @@ function importFile_(file, sheetName, force) {
 function readCsv_(file) {
   const blob = file.getBlob();
   let text = blob.getDataAsString('UTF-8');
-  if (text.indexOf('�') !== -1) text = blob.getDataAsString('Shift_JIS');  // Windows の書き出しは Shift_JIS のことが多い
-  text = text.replace(/^﻿/, '').replace(/\u000B/g, '\n');  // FileMaker はセル内改行を VT で出す
+  if (text.indexOf('\uFFFD') !== -1) text = blob.getDataAsString('Shift_JIS');  // Windows の書き出しは Shift_JIS のことが多い
+  text = text.replace(/^\uFEFF/, '').replace(/\u000B/g, '\n');  // FileMaker はセル内改行を VT で出す
   return Utilities.parseCsv(text);
 }
 
