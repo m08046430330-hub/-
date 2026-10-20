@@ -1,7 +1,7 @@
 /**
  * FileMaker で書き出したファイルを読んで、売上管理表のその日の欄に入れる（女性台帳の取り込みとは別のプロジェクト）。
  *   人件費.xlsx   → 人件費の合計を「女子給」に
- *   営業日報.xlsx → GrandTotal の合計を「売上実績」に（複数日まとめて書き出しても1日ずつ入る）
+ *   営業日報.xlsx → GrandTotal の合計を「売上実績」に（月まとめて書き出しても1日ずつ入る）
  * 準備：エディタ左の「サービス」で Drive API を追加 → setup を1回実行。
  */
 
@@ -52,20 +52,20 @@ function importJinkenhi_(file) {
   writeDay_(date, '女子給', total);
 }
 
-// 1行が1日分。GrandTotal の列のうち一番大きい値（＝現金・カードなどの合計）を「売上実績」に入れる
+// 1行が1日分（月まとめて書き出しても可）。CN_GrandTotal を「売上実績」に入れ、空の日（休み・未来の日）は触らない
 function importNippo_(file) {
   const src = readXlsx_(file);
   const header = src[0].map(h => String(h).trim());
-  const gtCols = header.map((h, i) => /grand|ｇｒａｎｄ|総合計/i.test(h) ? i : -1).filter(i => i >= 0);
+  let gtCol = header.indexOf('CN_GrandTotal');
+  if (gtCol < 0) gtCol = header.findIndex(h => /grandtotal$/i.test(h));
   const dateCol = findDateCol_(header);
-  if (!gtCols.length || dateCol < 0) {
+  if (gtCol < 0 || dateCol < 0) {
     throw new Error('GrandTotal か日付の列が見つかりません: ' + header.join(', '));
   }
   src.slice(1).forEach(r => {
     const v = String(r[dateCol]).trim();
-    if (!v) return;
-    const total = Math.max(...gtCols.map(i => toNum_(r[i])));
-    writeDay_(parseDate_(v), '売上実績', total);
+    if (!v || String(r[gtCol]).trim() === '') return;
+    writeDay_(parseDate_(v), '売上実績', toNum_(r[gtCol]));
   });
 }
 
