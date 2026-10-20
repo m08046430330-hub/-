@@ -92,7 +92,8 @@ function importFile_(file, sheetName, force) {
 
   const rows = body.map((r, n) => header.map((h, c) => {
     const i = srcIndex[c];
-    let v = i === undefined ? '' : r[i];
+    // FileMaker の金額表示「20,000.00 」は「20,000」にそろえる
+    let v = i === undefined ? '' : String(r[i]).trim().replace(/^(-?[\d,]+)\.0+$/, '$1');
     if (h === '女性ID' && v === '') v = n + 1;
     if (CHECKBOX_COLUMNS.indexOf(h) >= 0) v = /^(1|true|yes|○|✓|☑)$/i.test(String(v).trim());
     return v;
