@@ -1,6 +1,6 @@
 /**
  * FileMaker で書き出したファイルを読んで、売上管理表のその日の欄に入れる（女性台帳の取り込みとは別のプロジェクト）。
- *   人件費.xlsx   → 人件費の合計を「女子給」に
+ *   女子給.xlsx   → 人件費の合計を「女子給」に
  *   営業日報.xlsx → GrandTotal の合計を「売上実績」に（月まとめて書き出しても1日ずつ入る）
  * 準備：エディタ左の「サービス」で Drive API を追加 → setup を1回実行。
  */
@@ -16,7 +16,7 @@ function setup() {
 
 function importAll(force) {
   force = force === true;
-  runIfChanged_('人件費.xlsx', force, importJinkenhi_);
+  runIfChanged_('女子給.xlsx', force, importJinkenhi_);
   runIfChanged_('営業日報.xlsx', force, importNippo_);
 }
 
