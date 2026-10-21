@@ -1,6 +1,6 @@
 /**
  * FileMaker で書き出したファイルを読んで、売上管理表のその日の欄に入れる（女性台帳の取り込みとは別のプロジェクト）。
- *   女子給.xlsx   → 人件費の合計を「女子給」に
+ *   女子給.xlsx   → 総支給額の合計を「女子給」に
  *   営業日報.xlsx → GrandTotal の合計を「売上実績」に（月まとめて書き出しても1日ずつ入る）
  * 準備：エディタ左の「サービス」で Drive API を追加 → setup を1回実行。
  */
@@ -36,13 +36,12 @@ function runIfChanged_(fileName, force, fn) {
   props.setProperty(key, stamp);
 }
 
-// 人件費の合計（「人件費(残り)」は除く）を、その日の「女子給」に入れる
+// 総支給額の合計を、その日の「女子給」に入れる
 function importJinkenhi_(file) {
   const src = readXlsx_(file);
   const header = src[0].map(h => String(h).trim());
-  let col = header.indexOf('人件費');
-  if (col < 0) col = header.findIndex(h => h.indexOf('人件費') >= 0 && h.indexOf('残') < 0);
-  if (col < 0) throw new Error('人件費の列が見つかりません: ' + header.join(', '));
+  const col = header.findIndex(h => h.indexOf('総支給額') >= 0);
+  if (col < 0) throw new Error('総支給額の列が見つかりません: ' + header.join(', '));
   const total = src.slice(1).reduce((sum, r) => sum + toNum_(r[col]), 0);
 
   const dateCol = findDateCol_(header);
