@@ -38,6 +38,8 @@
 - 常時書き込み: スクリプトは .etsy_token.json が無いと環境の ETSY_REFRESH_TOKEN から自動で鍵を取る（新しいセッションでも auth 不要）。
   一度使った refresh_token でも再び使えることを確認（2026-10-17）。ただし発行から約90日で切れる → そのときは auth からやり直し、環境の ETSY_REFRESH_TOKEN を入れ替える
 - 鍵が使えるかの確認: python3 tools/etsy_oauth_colors.py check
+| 420 Alien Tシャツ（B+C 3001 黒 S〜3XL、表=宇宙のエイリアン、背中=エイリアンのボス一味、首に白420） | 6ae5ba6777623d452b08f11f | 未公開 | $24.99（S〜XL）/27.99（2XL）/29.99（3XL） | 558/590/518 | 2026-10-31 下書き作成（原価 $17.96/20.47/22.76）。背中の絵に銃が写る→Etsy/Printify の規約リスクをユーザーに確認中。公開はOK待ち |
+
 ## Etsy の属性（custom_attributes）
 - 未設定だと公開・更新が「Publishing error」になる。2026-10-05 に全商品へ設定済み。
 - 値は文字列で送る。色の ID: 1 Black / 10 White / 11 Yellow / 1213 Beige（etsy_property:200=主色、52047899002=副色）。
