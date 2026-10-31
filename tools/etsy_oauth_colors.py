@@ -23,7 +23,7 @@ import base64, hashlib, json, os, secrets, sys, time, urllib.error, urllib.parse
 SHOP_ID = 68269935
 STATE_FILE = ".etsy_oauth_state.json"
 TOKEN_FILE = ".etsy_token.json"
-SCOPES = "listings_r listings_w shops_r"
+SCOPES = "listings_r listings_w shops_r shops_w transactions_r"
 PRIMARY, SECONDARY = 200, 52047899002
 COLOR_IDS = {"Black": 1, "Green": 4, "Red": 9, "White": 10, "Yellow": 11, "Beige": 1213}
 
