@@ -41,6 +41,12 @@
 | 420 Alien Tシャツ（B+C 3001 黒 S〜3XL、表=宇宙のエイリアン、背中=エイリアンのボス一味、首に白420） | 6ae5ba6777623d452b08f11f | 4606893232 | $24.99（S〜XL）/27.99（2XL）/29.99（3XL） | 558/590/518 | 2026-10-31 公開（原価 $17.96/20.47/22.76）。背中に銃あり（ユーザー了承済みで公開）。写真4・タグ13・説明文・自動更新ON・T-Shirts・Black/Green は API で設定済み |
 | 420 Alien パーカー（Gildan 18500 黒 S〜3XL、表=宇宙のエイリアン、背中=ボス一味、首に白420） | 6ae5bae0aa7972528106c375 | 4606893312 | $36.99/38.99/40.99 | 584/525/597 | 2026-10-31 公開。銃あり（了承済み）。写真3・タグ13・説明文・自動更新ON・T-Shirts・Black/Green 設定済み。配送は Printify の国際用 318718462205（US $8.79・EU・UK・AU・その他の国まで） |
 | 420 Alien マグ（白 11oz、2枚の絵を黒背景で一周） | 6ae5bae1e44fe8bde907b3c6 | 4606871403 | $9.99 | 459 | 2026-10-31 公開（原価 $5.03）。銃あり（了承済み）。Etsy 写真は1枚→API で絵のアップ2枚・全体図・取っ手側を追加し計5枚。説明文・自動更新ON・Mugs・White/Green 設定済み |
+## 送料無料プラン（2026-10-31 作成係）
+- 値段: pricing_free_shipping_plan.md のとおり 18商品を変更済み（Printify で価格だけ変えて publish は variants のみ。タイトル・説明文・写真・タグ・色・自動更新は変化なしを1件ずつ確認）。結果は price_update_log_20261031.txt。盆栽パーカーは新旧同額なので変更なし、ステッカー3種は変えない
+- 配送設定: API は shops_w の許可を取り直しても 403（Printify が作った配送設定は API で書き換えられない様子）→ Etsy 画面で入力が必要。入力表は etsy_shipping_free_guide.md
+- 説明文への "Free shipping to the USA." の追記は、今回「説明文は送らない」指示のため未実施
+- Etsy OAuth の許可に shops_w・transactions_r を追加（tools/etsy_oauth_colors.py）
+
 ## Etsy の属性（custom_attributes）
 - 未設定だと公開・更新が「Publishing error」になる。2026-10-05 に全商品へ設定済み。
 - 値は文字列で送る。色の ID: 1 Black / 10 White / 11 Yellow / 1213 Beige（etsy_property:200=主色、52047899002=副色）。

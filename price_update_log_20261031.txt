@@ -1,0 +1,17 @@
+4606893312 prices [3699, 3899, 4099] -> [4699, 4899, 4999] OK | changed other: none
+4606893232 prices [2499, 2799, 2999] -> [3399, 3699, 3899] OK | changed other: none
+4596517422 prices [4599, 4799, 4999] -> [4699, 4899, 4999] OK | changed other: none
+4595683631 prices [1006] -> [1899] OK | changed other: none
+4595706234 prices [1758, 2036, 2290] -> [2699, 2999, 3299] OK | changed other: none
+4594919024 prices [2199] -> [2799] OK | changed other: none
+4594900175 prices [999] -> [1899] OK | changed other: none
+4594893674 prices [2299, 2599, 2899] -> [3299, 3599, 3799] OK | changed other: none
+4592364716 prices [2465, 2776] -> [3099, 3399] OK | changed other: none
+4589431758 prices [999] -> [1899] OK | changed other: none
+4589392223 prices [999] -> [1899] OK | changed other: none
+4585522299 prices [2399, 2699, 2999] -> [3399, 3699, 3899] OK | changed other: none
+4585491734 prices [1199] -> [2099] OK | changed other: none
+4585451765 prices [2193] -> [2799] OK | changed other: none
+4584786176 prices [2413, 2690, 2943] -> [3399, 3699, 3899] OK | changed other: none
+4584546414 prices [999] -> [1899] OK | changed other: none
+4583938426 prices [3741, 4007, 4262] -> [4399, 4599, 4699, 4999, 5199] OK | changed other: none
