@@ -44,7 +44,8 @@
 ## 送料無料プラン（2026-10-31 作成係）
 - 値段: pricing_free_shipping_plan.md のとおり 18商品を変更済み（Printify で価格だけ変えて publish は variants のみ。タイトル・説明文・写真・タグ・色・自動更新は変化なしを1件ずつ確認）。結果は price_update_log_20261031.txt。盆栽パーカーは新旧同額なので変更なし、ステッカー3種は変えない
 - 配送設定: API は shops_w の許可を取り直しても 403（Printify が作った配送設定は API で書き換えられない様子）→ Etsy 画面で入力が必要。入力表は etsy_shipping_free_guide.md
-- 説明文への "Free shipping to the USA." の追記は、今回「説明文は送らない」指示のため未実施
+- 10-31 説明文の Shipping & delivery に "- Free shipping to the USA." を Etsy API で直接追加（ステッカー以外19件）。Printify 側の説明文には入っていないので、Printify から説明文を送り直すと消える（送るときは description を送らないこと）
+- 10-31 Alien マグの配送設定を他のマグと同じ 316855216676 に変更（316810712213 は今どの商品も使っていない）
 - Etsy OAuth の許可に shops_w・transactions_r を追加（tools/etsy_oauth_colors.py）
 
 ## Etsy の属性（custom_attributes）
