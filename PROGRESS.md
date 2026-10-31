@@ -46,6 +46,7 @@
 - 配送設定: API は shops_w の許可を取り直しても 403（Printify が作った配送設定は API で書き換えられない様子）→ Etsy 画面で入力が必要。入力表は etsy_shipping_free_guide.md
 - 10-31 説明文の Shipping & delivery に "- Free shipping to the USA." を Etsy API で直接追加（ステッカー以外19件）。Printify 側の説明文には入っていないので、Printify から説明文を送り直すと消える（送るときは description を送らないこと）
 - 10-31 Alien マグの配送設定を他のマグと同じ 316855216676 に変更（316810712213 は今どの商品も使っていない）
+- 10-31 盆栽パーカーの配送設定を 318718462205（Alien パーカーと同じ）に変更。318296867554 は使われなくなった
 - Etsy OAuth の許可に shops_w・transactions_r を追加（tools/etsy_oauth_colors.py）
 
 ## Etsy の属性（custom_attributes）
