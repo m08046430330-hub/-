@@ -39,3 +39,22 @@
 - 5 ✅ Tote Bags・自動更新 ON・i_did・主色/副色（Beige/Green、Black/Green）・写真の説明文全部
 - 6 ✅ 生成り: natural canvas tote / market bag、黒: black tote bag / organic cotton tote（ほか11個は共通）
 - 7 ✅ 生成り 2→6枚（Printify の人物・生活・裏・アップ）、黒 2→5枚（絵のアップ2・表裏並び）
+
+## 公開後の確認（2026-11-03）
+| | 生成りトート Etsy 4608823174 | 黒トート Etsy 4608802675 |
+|---|---|---|
+| 状態 | 公開中 ✅ | 公開中 ✅ |
+| 価格 | $27.99 ✅ | $34.99 ✅ |
+| Black の OFF | ✅（在庫切れの黒は OFF） | — |
+| 色 | Beige/Green ✅ | Black/Green ✅ |
+| 素材など | Canvas・Cotton ✅ | Twill・Cotton ✅ |
+| タグ | 13 ✅（natural canvas tote 入り） | 13 ✅（black tote bag・organic cotton tote 入り） |
+| 写真 / 説明文 | 6 / 6 ✅ | 5 / 5 ✅ |
+| 棚・自動更新・作った人 | Tote Bags・ON・i_did ✅ | 同じ ✅ |
+| 送料無料の文 | ✅ | ✅ |
+| 配送 | 新しいトート用 318889894043 ✅ | 同じ ✅ |
+
+配送 318889894043「Free US Shipping - International, Tote Bags」: US $0・CA $4.74・AU $8.04・その他の国 $5.44（すべて Printify の送料 − US送料 で計算どおり）✅
+→ ローズトート・盆栽トートもこの設定に切り替わり、**トート4件とも世界中に送れるようになった** ✅
+
+注意: Printify で選ばれている写真は2枚ずつ。Printify から写真を送って再公開すると Etsy の写真も2枚に減る → 再公開では images を送らない
