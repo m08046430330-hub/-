@@ -86,6 +86,7 @@
 - 画像の表紙・並び順・選択は API では変更不可。PUT すると画像が 1 枚に減ることがある → Printify 画面で選び直す
 - print_areas の PUT はテキストレイヤーと洗濯表示（text_layer.svg）を送れない。テキストは PNG 化して配置、
   首にアップロード画像があれば洗濯表示は自動で付く
+- 2026-11-03 から Printify と Etsy の文章は一致。Etsy で文章を直したら Printify にも同じ文を入れること（ずれると再公開で上書きされる）
 - 公開は POST /publish.json（送る項目をフラグで選ぶ）。初回公開でタグが Etsy に届かないことがある → 公開後に Etsy 側のタグを確認し、0件なら tags:true だけで再送信。価格変更・公開・削除はユーザー確認後に行う
 
 ## ファイル
@@ -131,3 +132,4 @@
 - 10-31 送料無料の反映確認（check_free_shipping_20261031.md）: 価格19件・US送料無料はすべて完了。Alien マグの配送設定(316810712213)から「その他の国」が消えた、説明文に Free shipping の文がまだ
 - 10-31 再確認: Alien マグ配送・盆栽パーカー配送・送料無料の文（19件）は完了。Printify の説明文にはまだ送料無料の1行なし
 - 11-03 一括点検スクリプト tools/shop_audit.py を作成。初回結果 check_audit_20261103.md: 公開22件、要対応0・注意64。主なもの: Printify の説明文に送料無料の1行なし19件、Printify とタイトル違い12件、「その他の国」へ送れない6件、自動更新OFF・作った人 collective・色なし（ステッカー3種＋盆栽パーカー）、Alien パーカー3XL・Stoner Cats パーカー3XL の利益449円（原価が $32.20→$32.55 に値上がり）、Alien Tシャツ/パーカーの写真3〜4枚
+- 11-03 Printify の文章（タイトル・説明文・タグ）を Etsy に合わせた（ユーザー同意、22件）。PUT は title/description/tags のみ・再公開はしていない。Printify 画像枚数・Etsy 側（文章・写真・値段）とも変化なしを確認。Etsy の &quot; 等は元の記号に戻し、説明文末の Product information / Warnings / Care instructions の3行（Printify が公開時に自動で付ける）は除いた。変更前の控え: printify_text_backup_20261103.json。再点検で説明文19件・タイトル12件の注意は0件に

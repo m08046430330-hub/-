@@ -23,6 +23,7 @@ GET（読み取り）しか送らないので、何回実行しても安全で�
 import argparse
 import collections
 import datetime
+import html
 import json
 import os
 import sys
@@ -240,9 +241,9 @@ def audit(args):
         if not p:
             add(WARN, "Printify の商品が見つからない（つながりが切れている？）")
         else:
-            if p["title"].strip() != l["title"].strip():
+            if p["title"].strip() != html.unescape(l["title"]).strip():
                 add(WARN, "Printify とタイトルが違う（Printify から再公開すると Etsy 側が上書きされる）")
-            if sorted(t.lower() for t in p.get("tags", [])) != sorted(t.lower() for t in tags):
+            if sorted(t.lower() for t in p.get("tags", [])) != sorted(html.unescape(t).lower() for t in tags):
                 add(WARN, "Printify とタグが違う（再公開でタグを送ると上書きされる）")
             if expect_free and FREE_LINE in desc and FREE_LINE not in (p.get("description") or "").lower():
                 add(WARN, "Printify の説明文に送料無料の1行がない（説明文を送り直すと消える）")
