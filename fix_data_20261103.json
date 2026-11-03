@@ -618,6 +618,6 @@
  },
  "4_policy": {
   "policy_additional": "1行目の「オーダーメイド」と改行だけ削除し、2行目以降の英文はそのまま",
-  "policy_refunds": "Because every item is made to order just for you, I can't accept returns or exchanges for change of mind or wrong size. If your item arrives damaged or with a printing error, please message me within 14 days with a photo and I'll send a replacement or refund."
+  "policy_refunds": "Because every item is made to order just for you, I can't accept returns or exchanges for change of mind or wrong size. If your item arrives damaged or with a printing error, please message me within 30 days of delivery with a photo and I'll send a replacement or refund."
  }
 }
