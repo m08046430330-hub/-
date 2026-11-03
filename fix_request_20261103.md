@@ -11,3 +11,12 @@
 | 4 | ポリシー文2か所 | 4_policy | PUT /shops/68269935（policy_additional・policy_refunds）。ダメなら Etsy 画面 Settings → Policies |
 
 属性の値は、同じ種類の商品（Stoner Cats マグ・Stoner Cats T）にすでに入っている値をそのまま写したもの。
+
+## 作成係の対応（2026-11-03）
+- 1 ✅ 写真の説明文 8件・95枚（rank も一緒に送り、全件で枚数・順番・文を読み直して確認）
+- 2 ✅ Alien パーカーの棚 → Hoodies & Long Sleeves（60979751）
+- 3 ✅ Alien マグ 6項目・Alien T 5項目の属性
+- 4 ❌ API は「Shop policy is not eligible for EU Terms」（400）で書き込めない → Etsy 画面 Settings → Policies で入力が必要
+  - 追加ポリシー（Additional policies）: 1行目の「オーダーメイド」とその改行だけ消す
+  - 返品の文（Refunds）: fix_data_20261103.json の 4_policy.policy_refunds の英文に差し替え
+  - ⚠ 新しい返品の文は「14日以内に連絡」、追加ポリシーの英文は「30 days of delivery」で日数が合っていない。どちらかにそろえるとよい
