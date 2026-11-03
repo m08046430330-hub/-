@@ -139,3 +139,4 @@
 - 11-03 再点検: 22件中17件問題なし、残りは利益の5件（パーカー3XL 449円、ステッカーはユーザー決定）
 - 11-03 環境の ETSY_REFRESH_TOKEN を shops_w 付きの新しい値にユーザーが入れ替え済み（次のセッションから有効、発行から約90日）
 - 11-03 ユーザー決定: パーカー3XL（Alien・Stoner Cats、利益449円）は値上げしない。点検の「利益が少ない」注意はこの2件とステッカー3種なら既知
+- 11-03 写真を増やす作業を開始（ユーザー依頼「Japan Weed Tシャツの13枚を参考に」）。手順書 chrome_printify_mockups.md（Chrome の Claude が Printify でモックアップを選んで保存のみ）→ クラウドが images:true だけで publish → 手で足した写真・説明文を入れ直す。Etsy 写真の控え etsy_images_backup_20261103.json。注意: Alien マグの取っ手側の写真（Etsy のみ・1200px）は元ファイルが無く、クラウドから etsystatic.com に届かないため入れ直せない
