@@ -31,3 +31,11 @@
 5. 棚 Tote Bags、自動更新 ON、作った人 i_did、写真の説明文、主色・副色（Etsy 側）を API で
 6. タグを少し変えて2件で取り合わないように（例: 黒に "black tote bag" "organic cotton tote"、生成りに "natural canvas tote"）
 7. 黒トートの写真を増やす（4枚以上。Printify から写真を送って再公開すると減るので注意）
+
+## 作成係の対応（2026-11-03）
+- 公開前 1・2 ✅（custom_attributes 生成り 1213/4・黒 1/4、生成りの Black OFF）→ 公開: 生成り 4608823174・黒 4608802675
+- 3 タグ ✅ 13件ずつ届いていた
+- 4 配送 ✅ 2件とも自前の 318889894043（US $0・CA $4.74・AU $8.04・その他の国 $5.44）へ。公開でトート用 316374004275 が Printify 送料に戻ったので、これも API で同じ値に直した
+- 5 ✅ Tote Bags・自動更新 ON・i_did・主色/副色（Beige/Green、Black/Green）・写真の説明文全部
+- 6 ✅ 生成り: natural canvas tote / market bag、黒: black tote bag / organic cotton tote（ほか11個は共通）
+- 7 ✅ 生成り 2→6枚（Printify の人物・生活・裏・アップ）、黒 2→5枚（絵のアップ2・表裏並び）
