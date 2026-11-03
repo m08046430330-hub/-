@@ -75,3 +75,11 @@ python tools/printify_price.py --profit-yen 700 --rate 145   # 目標利益・�
 
 Etsy の手数料は「販売価格の9.5% + 1.15ドル」の概算で計算しています（Printify 画面の表示から逆算）。
 価格は「○○.99ドル」に切り上げます。
+
+## ショップ全体を一括点検する（tools/shop_audit.py）
+
+全出品のタグ・写真・説明文・色・自動更新・在庫・配送設定・利益・Printify とのずれを読み取り、問題を表にします（何も変更しません）。
+
+```sh
+python3 tools/shop_audit.py --out check_audit_20261103.md
+```

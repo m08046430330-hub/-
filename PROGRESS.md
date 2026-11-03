@@ -91,6 +91,7 @@
 ## ファイル
 - tools/printify_price.py: 価格チェック（確認のみがデフォルト）
 - tools/etsy_stats.py: Etsy の閲覧数・お気に入り数・価格の一覧（確認のみ）
+- tools/shop_audit.py: 全出品の一括点検（確認のみ）。タグ・写真・説明文・色・自動更新・在庫・配送・利益・Printify とのずれを表にする。`python3 tools/shop_audit.py --out check_audit_YYYYMMDD.md`
 - 作成後ファイル/: 作成したデザイン画像（高解像度）
 
 ## 2026-10-07 の状態（shop_status_check.md）
@@ -129,3 +130,4 @@
 - 10-31 ステッカー3種は価格・送料ともそのまま（ユーザー決定）。他は pricing_free_shipping_plan.md どおり送料無料化へ
 - 10-31 送料無料の反映確認（check_free_shipping_20261031.md）: 価格19件・US送料無料はすべて完了。Alien マグの配送設定(316810712213)から「その他の国」が消えた、説明文に Free shipping の文がまだ
 - 10-31 再確認: Alien マグ配送・盆栽パーカー配送・送料無料の文（19件）は完了。Printify の説明文にはまだ送料無料の1行なし
+- 11-03 一括点検スクリプト tools/shop_audit.py を作成。初回結果 check_audit_20261103.md: 公開22件、要対応0・注意64。主なもの: Printify の説明文に送料無料の1行なし19件、Printify とタイトル違い12件、「その他の国」へ送れない6件、自動更新OFF・作った人 collective・色なし（ステッカー3種＋盆栽パーカー）、Alien パーカー3XL・Stoner Cats パーカー3XL の利益449円（原価が $32.20→$32.55 に値上がり）、Alien Tシャツ/パーカーの写真3〜4枚
