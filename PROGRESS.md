@@ -134,5 +134,8 @@
 - 11-03 一括点検スクリプト tools/shop_audit.py を作成。初回結果 check_audit_20261103.md: 公開22件、要対応0・注意64。主なもの: Printify の説明文に送料無料の1行なし19件、Printify とタイトル違い12件、「その他の国」へ送れない6件、自動更新OFF・作った人 collective・色なし（ステッカー3種＋盆栽パーカー）、Alien パーカー3XL・Stoner Cats パーカー3XL の利益449円（原価が $32.20→$32.55 に値上がり）、Alien Tシャツ/パーカーの写真3〜4枚
 - 11-03 Printify の文章（タイトル・説明文・タグ）を Etsy に合わせた（ユーザー同意、22件）。PUT は title/description/tags のみ・再公開はしていない。Printify 画像枚数・Etsy 側（文章・写真・値段）とも変化なしを確認。Etsy の &quot; 等は元の記号に戻し、説明文末の Product information / Warnings / Care instructions の3行（Printify が公開時に自動で付ける）は除いた。変更前の控え: printify_text_backup_20261103.json。再点検で説明文19件・タイトル12件の注意は0件に
 - 11-03 一括点検の残りを直した（Etsy API）: ステッカー3種・盆栽パーカー・Alien 3件の自動更新 ON・作った人 i_did に統一。色: Mouse ステッカー Green/Black、盆栽ステッカー Green/Brown、Stoner Cats ステッカー Green/Yellow、盆栽パーカー White/Green。Stoner Cats パーカーの配送を 318718462205（国際・他のパーカーと同じ）へ。Alien Tシャツ・パーカーに表・背中の絵のアップ2枚を追加（rank 末尾・説明文付き、表紙は変わらず）→ 6枚・5枚
-- 11-03 判明: .etsy_token.json の許可に shops_w が入っていなかった（listings_r listings_w shops_r transactions_r）。10-31 の「配送設定 403」はこれが原因の可能性。トート2件・ステッカー3件の国際配送（新しい配送設定を作る）は shops_w 付きの鍵の取り直し待ち
+- 11-03 判明: .etsy_token.json の許可に shops_w が入っていなかった（listings_r listings_w shops_r transactions_r）。10-31 の「配送設定 403」はこれが原因の可能性。→ 同日、鍵を取り直して shops_w 付きになった
+- 11-03 新しい配送設定を API で作成し割り当て: トート2件 → 318889894043「Free US Shipping - International, Tote Bags」（US 無料 / CA $4.74 / AU $8.04 / その他 $5.44、2個目 $0/4.39/4.99/4.00）。ステッカー3種 → 319455172128「International, Stickers」（US $4.59 / CA $8.79 / AU $10.99 / EU $14.49 / その他 $10.99、2個目 $0.09〜0.99）。旧 316374004275・318297142404・318142368400 は使われなくなった
+- 11-03 再点検: 22件中17件問題なし、残りは利益の5件（パーカー3XL 449円、ステッカーはユーザー決定）
+- 環境の ETSY_REFRESH_TOKEN は古い（shops_w なし）。ユーザーに新しい値への入れ替えを依頼中。入れ替えまでは新しいセッションで配送設定の書き込み不可
 
