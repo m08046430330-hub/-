@@ -130,3 +130,4 @@
 - 10-31 送料無料の反映確認（check_free_shipping_20261031.md）: 価格19件・US送料無料はすべて完了。Alien マグの配送設定(316810712213)から「その他の国」が消えた、説明文に Free shipping の文がまだ
 - 10-31 再確認: Alien マグ配送・盆栽パーカー配送・送料無料の文（19件）は完了。Printify の説明文にはまだ送料無料の1行なし
 - 11-03 近況（check_status_20261103.md）: 閲覧298・初のお気に入り2件・販売0。Alien 3件は閲覧0。ポリシー文は未対応のまま
+- 11-03 Alien トート2件の公開前点検（check_alien_tote_prepublish.md）: ユーザーが公開を指示。custom_attributes 空・生成りの Black が在庫切れで ON を直してから公開
