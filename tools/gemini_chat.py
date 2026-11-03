@@ -5,8 +5,9 @@
 
 使い方:
   1. APIキーを作る: https://aistudio.google.com/apikey で「APIキーを作成」
-  2. 環境変数 GEMINI_API_KEY に入れる
-       Claude のクラウド環境: 環境設定のシークレット／環境変数に GEMINI_API_KEY として登録
+  2. キーを設定する（どちらか）
+       Claude のクラウド環境: ネットワークシークレットに generativelanguage.googleapis.com 用として登録
+                              （ヘッダー x-goog-api-key）。または環境変数 GEMINI_API_KEY に登録
        Windows (PowerShell):  $env:GEMINI_API_KEY="AIza..."
        Mac / Linux:           export GEMINI_API_KEY="AIza..."
   3. 実行:
@@ -28,9 +29,8 @@ DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 def request(method, path, body=None):
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        sys.exit("GEMINI_API_KEY が設定されていません。")
+    # ネットワークシークレットでプロキシがキーを付ける環境では、環境変数は不要（仮の値を送ると置き換えられる）
+    key = os.environ.get("GEMINI_API_KEY") or "proxy-injected"
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
         API + path,
@@ -43,6 +43,8 @@ def request(method, path, body=None):
             return json.load(res)
     except urllib.error.HTTPError as e:
         msg = e.read().decode(errors="replace")
+        if e.code in (400, 401, 403) and not os.environ.get("GEMINI_API_KEY"):
+            sys.exit("APIキーが届いていません。GEMINI_API_KEY かネットワークシークレットを設定してください。\n" + msg)
         if e.code == 429:
             sys.exit("無料枠の回数制限に達しました。少し待ってから再実行してください。\n" + msg)
         sys.exit(f"Gemini API エラー {e.code}: {msg}")
