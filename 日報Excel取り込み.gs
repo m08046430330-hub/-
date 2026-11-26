@@ -104,5 +104,25 @@ function importLatestExcel(force) {
   sheet.getRange(1, 1, all.length, header.length).setValues(all);
 
   props.setProperty('lastImported', stamp);
+  SpreadsheetApp.flush();
+  ensureMonthSheets();
   return '取り込みました：' + newRows.length + '行（合計 ' + rows.length + '行）';
+}
+
+// 「2026年11月」のような月別シートがない月があれば、既存の月別シートをコピーして作る
+function ensureMonthSheets() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const monthName = /^\d{4}年\d{1,2}月$/;
+  const template = ss.getSheets().find(s => monthName.test(s.getName()));
+  if (!template) return;
+  const dates = ss.getSheetByName('担当者あり一覧').getRange('A4:A').getValues()
+    .map(r => r[0]).filter(v => v instanceof Date);
+  const months = {};
+  dates.forEach(d => { months[d.getFullYear() + '年' + (d.getMonth() + 1) + '月'] = d; });
+  Object.keys(months).sort().forEach(name => {
+    if (ss.getSheetByName(name)) return;
+    const d = months[name];
+    const sheet = ss.insertSheet(name, 1, { template: template });
+    sheet.getRange('B1').setValue(new Date(d.getFullYear(), d.getMonth(), 1));
+  });
 }
