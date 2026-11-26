@@ -48,10 +48,16 @@ function importLatestExcel(force) {
   if (!force && props.getProperty('lastImported') === key) return null;
 
   // ExcelをいったんGoogleスプレッドシートに変換して中身を読む
-  const tmp = Drive.Files.copy(
-    { name: '一時変換_' + latest.getName(), mimeType: MimeType.GOOGLE_SHEETS },
-    latest.getId()
+  const res = UrlFetchApp.fetch(
+    'https://www.googleapis.com/drive/v3/files/' + latest.getId() + '/copy',
+    {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      payload: JSON.stringify({ name: '一時変換_' + latest.getName(), mimeType: MimeType.GOOGLE_SHEETS }),
+    }
   );
+  const tmp = JSON.parse(res.getContentText());
   try {
     const values = SpreadsheetApp.openById(tmp.id).getSheets()[0].getDataRange().getValues();
     const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
