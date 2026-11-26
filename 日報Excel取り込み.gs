@@ -1,8 +1,9 @@
-// 「コンパニオン支給額」フォルダに置かれた一番新しいExcelを
+// ドライブにある「コンパニオン支給額.xlsx」（一番新しいもの）を
 // 「Excel貼り付け」シートに自動で取り込むスクリプト
 
 const FOLDER_ID = '15sRvRW_saMQj0QwejWKjJADpn7c5ZyUP'; // コンパニオン支給額フォルダ
 const SHEET_NAME = 'Excel貼り付け';
+const FILE_NAME = 'コンパニオン支給額.xlsx'; // FileMakerで保存するファイル名
 const SPREADSHEET_ID = '12PsHkSdtbwos9lioVvxLlhUfyhWp1bPiAK8b73J0IWE'; // コンパニオン支給額
 
 // スプレッドシートを開くと上のメニューに「日報取り込み」が出る
@@ -36,7 +37,7 @@ function autoImport() {
 }
 
 function importLatestExcel(force) {
-  const files = DriveApp.getFolderById(FOLDER_ID).getFiles();
+  const files = DriveApp.getFilesByName(FILE_NAME);
   let latest = null;
   while (files.hasNext()) {
     const f = files.next();
