@@ -1,7 +1,7 @@
-// 「日報Excel置き場」フォルダに置かれた一番新しいExcelを
+// 「コンパニオン支給額」フォルダに置かれた一番新しいExcelを
 // 「Excel貼り付け」シートに自動で取り込むスクリプト
 
-const FOLDER_ID = '15sRvRW_saMQj0QwejWKjJADpn7c5ZyUP'; // 日報Excel置き場
+const FOLDER_ID = '15sRvRW_saMQj0QwejWKjJADpn7c5ZyUP'; // コンパニオン支給額フォルダ
 const SHEET_NAME = 'Excel貼り付け';
 
 // スプレッドシートを開くと上のメニューに「日報取り込み」が出る
