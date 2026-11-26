@@ -3,6 +3,7 @@
 
 const FOLDER_ID = '15sRvRW_saMQj0QwejWKjJADpn7c5ZyUP'; // コンパニオン支給額フォルダ
 const SHEET_NAME = 'Excel貼り付け';
+const SPREADSHEET_ID = '12PsHkSdtbwos9lioVvxLlhUfyhWp1bPiAK8b73J0IWE'; // コンパニオン支給額
 
 // スプレッドシートを開くと上のメニューに「日報取り込み」が出る
 function onOpen() {
@@ -16,7 +17,8 @@ function onOpen() {
 // メニューから手動で取り込む（同じファイルでも取り込み直す）
 function importNow() {
   const name = importLatestExcel(true);
-  SpreadsheetApp.getUi().alert(name ? '取り込みました：' + name : 'フォルダにExcelがありません');
+  const msg = name ? '取り込みました：' + name : 'フォルダにExcelがありません';
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
 }
 
 // 5分ごとの自動取り込みを設定する（1回だけ実行すればOK）
@@ -25,7 +27,7 @@ function setupTrigger() {
     .filter(t => t.getHandlerFunction() === 'autoImport')
     .forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('autoImport').timeBased().everyMinutes(5).create();
-  SpreadsheetApp.getUi().alert('自動取り込みをオンにしました（5分ごと）');
+  try { SpreadsheetApp.getUi().alert('自動取り込みをオンにしました（5分ごと）'); } catch (e) {}
 }
 
 // 自動取り込み（新しいExcelがあるときだけ取り込む）
@@ -60,7 +62,7 @@ function importLatestExcel(force) {
   const tmp = JSON.parse(res.getContentText());
   try {
     const values = SpreadsheetApp.openById(tmp.id).getSheets()[0].getDataRange().getValues();
-    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
     sheet.clearContents();
     if (sheet.getMaxColumns() < values[0].length) {
       sheet.insertColumnsAfter(sheet.getMaxColumns(), values[0].length - sheet.getMaxColumns());
